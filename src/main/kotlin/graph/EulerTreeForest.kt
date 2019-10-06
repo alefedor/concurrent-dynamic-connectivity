@@ -1,0 +1,5 @@
+package graph
+
+class EulerTreeForest {
+
+}

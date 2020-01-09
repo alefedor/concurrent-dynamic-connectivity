@@ -1,8 +1,8 @@
-package connectivity
+package connectivity.concurrent.tree
 
 import kotlin.random.Random
 
-class EulerTourTree(val size: Int) {
+class ConcurrentEulerTourTree(val size: Int) {
     private val nodes: Array<Node>
     private val edgeToNode = mutableMapOf<Pair<Int, Int>, Node>()
     private val random = Random(0)

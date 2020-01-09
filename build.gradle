@@ -3,6 +3,8 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.41'
 }
 
+apply plugin: 'idea'git add
+
 group 'hse'
 version '1.0-SNAPSHOT'
 
@@ -10,10 +12,14 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    jcenter()
+    maven { url 'https://kotlin.bintray.com/kotlinx' }
+    maven { url 'https://dl.bintray.com/devexperts/Maven' }
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile 'org.jetbrains.kotlinx:lincheck:2.4'
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 

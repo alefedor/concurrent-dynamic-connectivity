@@ -3,7 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.41'
 }
 
-apply plugin: 'idea'git add
+apply plugin: 'idea'
 
 group 'hse'
 version '1.0-SNAPSHOT'

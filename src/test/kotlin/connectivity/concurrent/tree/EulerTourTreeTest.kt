@@ -1,6 +1,5 @@
-package connectivity.sequential
+package connectivity.concurrent.tree
 
-import connectivity.concurrent.tree.ConcurrentEulerTourTree
 import org.junit.Assert.*
 import org.junit.Test
 

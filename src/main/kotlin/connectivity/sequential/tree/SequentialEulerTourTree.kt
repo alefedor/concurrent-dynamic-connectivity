@@ -3,8 +3,8 @@ package connectivity.sequential.tree
 import kotlin.random.Random
 
 interface SequentialEulerTourTree {
-    fun addTreeEdge(u: Int, v: Int)
-    fun removeTreeEdge(u: Int, v: Int)
+    fun addEdge(u: Int, v: Int)
+    fun removeEdge(u: Int, v: Int)
     fun sameComponent(u: Int, v: Int): Boolean
     fun root(u: Int): Node // for grained locking and traversals
 
@@ -29,7 +29,7 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
         nodes = Array(size) { SequentialEulerTourTree.Node(priorities[it]) }
     }
 
-    override fun addTreeEdge(u: Int, v: Int) {
+    override fun addEdge(u: Int, v: Int) {
         val uNode = nodes[u]
         val vNode = nodes[v]
 
@@ -48,7 +48,7 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
         merge(merge(uRoot, uv), merge(vRoot, vu))
     }
 
-    override fun removeTreeEdge(u: Int, v: Int) {
+    override fun removeEdge(u: Int, v: Int) {
         val edgeNode = edgeToNode[Pair(u, v)]!!
         val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
 

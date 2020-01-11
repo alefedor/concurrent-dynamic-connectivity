@@ -5,8 +5,14 @@ import connectivity.sequential.tree.recalculateUp
 import kotlin.math.max
 import kotlin.math.min
 
-class SequentialDynamicConnectivity (val nodes: Int) {
-    private val levels: Array<SequentialEulerTourTree>
+interface DynamicConnectivity {
+    fun addEdge(u: Int, v: Int)
+    fun removeEdge(u: Int, v: Int)
+    fun sameComponents(u: Int, v: Int): Boolean
+}
+
+class SequentialDynamicConnectivity (val nodes: Int) : DynamicConnectivity {
+    private val levels: Array<EulerTourTree>
     private val ranks = HashMap<Pair<Int, Int>, Int>()
 
     init {
@@ -16,10 +22,10 @@ class SequentialDynamicConnectivity (val nodes: Int) {
             levelNumber++
             maxSize *= 2
         }
-        levels = Array(levelNumber) { SequentialEulerTourTreeImpl(nodes) }
+        levels = Array(levelNumber) { SequentialEulerTourTree(nodes) }
     }
 
-    fun addEdge(u: Int, v: Int) {
+    override fun addEdge(u: Int, v: Int) {
         val edge = Pair(min(u, v), max(u, v))
         ranks[edge] = 0
         if (!levels[0].sameComponent(u, v)) {
@@ -34,7 +40,7 @@ class SequentialDynamicConnectivity (val nodes: Int) {
         }
     }
 
-    fun removeEdge(u: Int, v: Int) {
+    override fun removeEdge(u: Int, v: Int) {
         val edge = Pair(min(u, v), max(u, v))
         val rank = ranks[edge] ?: return
         ranks.remove(edge)
@@ -78,7 +84,7 @@ class SequentialDynamicConnectivity (val nodes: Int) {
 
     }
 
-    fun sameComponents(u: Int, v: Int) = levels[0].sameComponent(u, v)
+    override fun sameComponents(u: Int, v: Int) = levels[0].sameComponent(u, v)
 
     private fun increaseTreeEdgesRank(node: Node, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return

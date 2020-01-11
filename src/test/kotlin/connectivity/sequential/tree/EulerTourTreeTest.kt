@@ -16,7 +16,7 @@ class EulerTourTreeTest {
         repeat(iterations) {
             val scenario = TreeConnectivityScenarioGenerator.generate(nodes, scenarioSize)
             val slowConnectivity = SlowConnectivity(nodes)
-            val connectivity = SequentialEulerTourTreeImpl(nodes)
+            val connectivity = SequentialEulerTourTree(nodes)
             for (operation in scenario) {
                 when (operation.type) {
                     OperationType.ADD_EDGE -> {
@@ -38,7 +38,7 @@ class EulerTourTreeTest {
 
     @Test
     fun testSimple() {
-        val connectivity = SequentialEulerTourTreeImpl(5)
+        val connectivity = SequentialEulerTourTree(5)
         assertFalse(connectivity.sameComponent(0, 1))
         connectivity.addEdge(0, 1)
         assertTrue(connectivity.sameComponent(0, 1))

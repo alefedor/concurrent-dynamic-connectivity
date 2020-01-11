@@ -4,7 +4,7 @@ import java.util.*
 import kotlin.collections.HashSet
 import kotlin.random.Random
 
-interface SequentialEulerTourTree {
+interface EulerTourTree {
     fun addEdge(u: Int, v: Int)
     fun removeEdge(u: Int, v: Int)
     fun sameComponent(u: Int, v: Int): Boolean
@@ -24,7 +24,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
     var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != null
 }
 
-class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
+class SequentialEulerTourTree(val size: Int) : EulerTourTree {
     private val nodes: Array<Node>
     private val edgeToNode = mutableMapOf<Pair<Int, Int>, Node>()
     private val random = Random(0)

@@ -1,5 +1,7 @@
 package connectivity.sequential.tree
 
+import java.util.*
+import kotlin.collections.HashSet
 import kotlin.random.Random
 
 interface SequentialEulerTourTree {
@@ -7,18 +9,24 @@ interface SequentialEulerTourTree {
     fun removeEdge(u: Int, v: Int)
     fun sameComponent(u: Int, v: Int): Boolean
     fun root(u: Int): Node // for grained locking and traversals
+    fun node(u: Int): Node // for non-tree edges support
 
-    class Node(val priority: Int) {
-        var parent: Node? = null
-        var left: Node? = null
-        var right: Node? = null
-        var size: Int = 1
-    }
+}
+
+class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>? = null) {
+    var parent: Node? = null
+    var left: Node? = null
+    var right: Node? = null
+    var size: Int = 1
+    val nonTreeEdges: MutableSet<Pair<Int, Int>> = if (isVertex) HashSet() else Collections.emptySet() // for storing non-tree edges in general case
+    var hasNonTreeEdges: Boolean = false // for traversal
+    var currentLevelTreeEdge: Pair<Int, Int>? = treeEdge
+    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != null
 }
 
 class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
-    private val nodes: Array<SequentialEulerTourTree.Node>
-    private val edgeToNode = mutableMapOf<Pair<Int, Int>, SequentialEulerTourTree.Node>()
+    private val nodes: Array<Node>
+    private val edgeToNode = mutableMapOf<Pair<Int, Int>, Node>()
     private val random = Random(0)
 
     init {
@@ -26,7 +34,7 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not nodes
         val priorities = List(size) { it }.shuffled(random)
-        nodes = Array(size) { SequentialEulerTourTree.Node(priorities[it]) }
+        nodes = Array(size) { Node(priorities[it]) }
     }
 
     override fun addEdge(u: Int, v: Int) {
@@ -39,8 +47,8 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
 
         val uRoot = root(uNode)
         val vRoot = root(vNode)
-        val uv = SequentialEulerTourTree.Node(size + random.nextInt(10 * size))
-        val vu = SequentialEulerTourTree.Node(size + random.nextInt(10 * size))
+        val uv = Node(size + random.nextInt(10 * size), false, Pair(u, v))
+        val vu = Node(size + random.nextInt(10 * size), false, Pair(v, u))
 
         edgeToNode[Pair(u, v)] = uv
         edgeToNode[Pair(v, u)] = vu
@@ -79,9 +87,11 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
 
     override fun sameComponent(u: Int, v: Int): Boolean = root(u) == root(v)
 
-    override fun root(u: Int): SequentialEulerTourTree.Node = root(nodes[u])
+    override fun root(u: Int): Node = root(nodes[u])
 
-    private fun root(n: SequentialEulerTourTree.Node): SequentialEulerTourTree.Node {
+    override fun node(u: Int): Node = nodes[u]
+
+    private fun root(n: Node): Node {
         var node = n
         var parent = node.parent
         while (parent != null) {
@@ -92,7 +102,7 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
     }
 
     // [prefix node suffix] -> [node suffix prefix] (rotation)
-    private fun makeFirst(node: SequentialEulerTourTree.Node) {
+    private fun makeFirst(node: Node) {
         val root = root(node)
         val position = node.position()
         val div = split(root, position) // ([A], [node B])
@@ -103,7 +113,7 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
      * Note, that the parent for the second tree will be same.
      * [sizeLeft] is the number of nodes that should go to the left tree
      */
-    private fun split(node: SequentialEulerTourTree.Node?, sizeLeft: Int): Pair<SequentialEulerTourTree.Node?, SequentialEulerTourTree.Node?> {
+    private fun split(node: Node?, sizeLeft: Int): Pair<Node?, Node?> {
         if (node == null) return Pair(null, null)
 
         val toTheLeft = 1 + (node.left?.size ?: 0)
@@ -112,36 +122,36 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
             val division = split(node.right, sizeLeft - toTheLeft)
             node.right = division.first
             node.right?.parent = node
-            recalculateSize(node)
+            node.recalculate()
             Pair(node, division.second)
         } else {
             // node goes to the right part
             val division = split(node.left, sizeLeft)
             node.left = division.second
             node.left?.parent = node
-            recalculateSize(node)
+            node.recalculate()
             Pair(division.first, node)
         }
     }
 
-    private fun merge(a: SequentialEulerTourTree.Node?, b: SequentialEulerTourTree.Node?): SequentialEulerTourTree.Node? {
+    private fun merge(a: Node?, b: Node?): Node? {
         if (a == null) return b
         if (b == null) return a
         return if (a.priority < b.priority) {
             a.right = merge(a.right, b)
             a.right?.parent = a
-            recalculateSize(a)
+            a.recalculate()
             a
         } else {
             b.left = merge(a, b.left)
             b.left?.parent = b
-            recalculateSize(b)
+            b.recalculate()
             b
         }
     }
 
     /// from 0 to n - 1
-    private fun SequentialEulerTourTree.Node.position(): Int {
+    private fun Node.position(): Int {
         var position = (this.left?.size ?: 0)
         var current = this
         while (true) {
@@ -152,8 +162,15 @@ class SequentialEulerTourTreeImpl(val size: Int) : SequentialEulerTourTree {
         }
         return position
     }
+}
 
-    private fun recalculateSize(node: SequentialEulerTourTree.Node) {
-        node.size = 1 + (node.left?.size ?: 0) + (node.right?.size ?: 0)
-    }
+internal fun Node.recalculate() {
+    size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
+    hasNonTreeEdges = nonTreeEdges.isNotEmpty() || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
+    hasCurrentLevelTreeEdges = currentLevelTreeEdge != null || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+}
+
+internal fun Node.recalculateUp() {
+    recalculate()
+    parent?.recalculateUp()
 }

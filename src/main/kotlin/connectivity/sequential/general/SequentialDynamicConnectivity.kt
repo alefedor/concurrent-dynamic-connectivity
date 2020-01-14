@@ -1,28 +1,27 @@
 package connectivity.sequential.general
 
 import connectivity.sequential.tree.*
-import connectivity.sequential.tree.recalculateUp
 import kotlin.math.max
 import kotlin.math.min
 
 interface DynamicConnectivity {
     fun addEdge(u: Int, v: Int)
     fun removeEdge(u: Int, v: Int)
-    fun sameComponents(u: Int, v: Int): Boolean
+    fun sameComponent(u: Int, v: Int): Boolean
 }
 
-class SequentialDynamicConnectivity (val nodes: Int) : DynamicConnectivity {
+class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivity {
     private val levels: Array<EulerTourTree>
     private val ranks = HashMap<Pair<Int, Int>, Int>()
 
     init {
         var levelNumber = 1
         var maxSize = 1
-        while (maxSize < nodes) {
+        while (maxSize < size) {
             levelNumber++
             maxSize *= 2
         }
-        levels = Array(levelNumber) { SequentialEulerTourTree(nodes) }
+        levels = Array(levelNumber) { SequentialEulerTourTree(size) }
     }
 
     override fun addEdge(u: Int, v: Int) {
@@ -31,12 +30,12 @@ class SequentialDynamicConnectivity (val nodes: Int) : DynamicConnectivity {
         if (!levels[0].sameComponent(u, v)) {
             levels[0].addEdge(u, v)
         } else {
-            val uNode = levels[0].node(u)
-            val vNode = levels[0].node(v)
-            uNode.nonTreeEdges.add(edge)
-            uNode.recalculateUp()
-            uNode.nonTreeEdges.add(edge)
-            vNode.recalculateUp()
+            levels[0].node(u).update {
+                nonTreeEdges.add(edge)
+            }
+            levels[0].node(v).update {
+                nonTreeEdges.add(edge)
+            }
         }
     }
 
@@ -48,19 +47,19 @@ class SequentialDynamicConnectivity (val nodes: Int) : DynamicConnectivity {
         val isNonTreeEdge = level.node(u).nonTreeEdges.contains(edge)
 
         if (isNonTreeEdge) {
-            val uNode = level.node(u)
-            val vNode = level.node(v)
-            uNode.nonTreeEdges.remove(edge)
-            uNode.recalculateUp()
-            vNode.nonTreeEdges.remove(edge)
-            vNode.recalculateUp()
+            level.node(u).update {
+                nonTreeEdges.remove(edge)
+            }
+            level.node(v).update {
+                nonTreeEdges.remove(edge)
+            }
             return
         }
 
         for (r in 0..rank)
             levels[r].removeEdge(u, v)
 
-        for (r in rank..0) {
+        for (r in rank downTo 0) {
             val searchLevel = levels[r]
             var uRoot = searchLevel.root(u)
             var vRoot = searchLevel.root(v)
@@ -76,7 +75,7 @@ class SequentialDynamicConnectivity (val nodes: Int) : DynamicConnectivity {
             increaseTreeEdgesRank(uRoot, u, v, r)
             val replacementEdge = findReplacement(uRoot, r)
             if (replacementEdge != null) {
-                for (i in r..0)
+                for (i in 0..r)
                     levels[i].addEdge(replacementEdge.first, replacementEdge.second)
                 break
             }
@@ -84,14 +83,17 @@ class SequentialDynamicConnectivity (val nodes: Int) : DynamicConnectivity {
 
     }
 
-    override fun sameComponents(u: Int, v: Int) = levels[0].sameComponent(u, v)
+    override fun sameComponent(u: Int, v: Int) = levels[0].sameComponent(u, v)
 
     private fun increaseTreeEdgesRank(node: Node, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
 
         node.currentLevelTreeEdge?.let {
             node.currentLevelTreeEdge = null
-            levels[rank + 1].addEdge(it.first, it.second)
+            if (it.first < it.second) { // not to promote the same edge twice
+                levels[rank + 1].addEdge(it.first, it.second)
+                ranks[it] = rank + 1
+            }
         }
 
         node.left?.let {
@@ -114,18 +116,39 @@ class SequentialDynamicConnectivity (val nodes: Int) : DynamicConnectivity {
 
         while (iterator.hasNext()) {
             val edge = iterator.next()
+            val firstNode = levels[rank].node(edge.first)
+            if (firstNode != node)
+                firstNode.update {
+                    nonTreeEdges.remove(edge)
+                }
+            else
+                levels[rank].node(edge.second).update {
+                    nonTreeEdges.remove(edge)
+                }
             iterator.remove()
 
-            if (!levels[rank].sameComponent(edge.first, edge.second))// is replacement
+            if (!levels[rank].sameComponent(edge.first, edge.second)) {
+                // is replacement
                 result = edge
+                break
+            } else {
+                // promote non-tree edge
+                levels[rank + 1].node(edge.first).update {
+                    nonTreeEdges.add(edge)
+                }
+                levels[rank + 1].node(edge.second).update {
+                    nonTreeEdges.add(edge)
+                }
+                ranks[edge] = rank + 1
+            }
         }
 
-        if (result != null) {
+        if (result == null) {
             val leftResult = node.left?.let { findReplacement(it, rank) }
             if (leftResult != null)
                 result = leftResult
         }
-        if (result != null) {
+        if (result == null) {
             val rightResult = node.right?.let { findReplacement(it, rank) }
             if (rightResult != null)
                 result = rightResult

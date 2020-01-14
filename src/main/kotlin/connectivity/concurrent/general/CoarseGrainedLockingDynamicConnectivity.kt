@@ -13,5 +13,5 @@ class CoarseGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
     override fun removeEdge(u: Int, v: Int) = connectivity.removeEdge(u, v)
 
     @Synchronized
-    override fun sameComponents(u: Int, v: Int): Boolean = connectivity.sameComponents(u, v)
+    override fun sameComponent(u: Int, v: Int): Boolean = connectivity.sameComponent(u, v)
 }

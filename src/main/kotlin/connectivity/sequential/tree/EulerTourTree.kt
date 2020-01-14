@@ -38,6 +38,10 @@ class SequentialEulerTourTree(val size: Int) : EulerTourTree {
     }
 
     override fun addEdge(u: Int, v: Int) {
+        if (edgeToNode[Pair(u, v)] != null) {
+            return
+        }
+
         val uNode = nodes[u]
         val vNode = nodes[v]
 
@@ -57,6 +61,10 @@ class SequentialEulerTourTree(val size: Int) : EulerTourTree {
     }
 
     override fun removeEdge(u: Int, v: Int) {
+        if (edgeToNode[Pair(u, v)] == null) {
+            return
+        }
+
         val edgeNode = edgeToNode[Pair(u, v)]!!
         val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
 
@@ -173,4 +181,9 @@ internal fun Node.recalculate() {
 internal fun Node.recalculateUp() {
     recalculate()
     parent?.recalculateUp()
+}
+
+internal fun Node.update(body: Node.() -> Unit) {
+    body()
+    recalculateUp()
 }

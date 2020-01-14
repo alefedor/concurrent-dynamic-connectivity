@@ -2,19 +2,21 @@ package connectivity.sequential.tree
 
 import connectivity.sequential.OperationType
 import connectivity.sequential.SlowConnectivity
-import connectivity.sequential.TreeConnectivityScenarioGenerator
+import connectivity.sequential.DynamicConnectivityScenarioGenerator
+import connectivity.sequential.ScenarioType
 import org.junit.Assert.*
 import org.junit.Test
 
 class EulerTourTreeTest {
     @Test
     fun stress() {
-        val iterations = 1000000
+        val iterations = 10000000
         val nodes = 6
         val scenarioSize = 20
+        val scenarioGenerator = DynamicConnectivityScenarioGenerator(ScenarioType.TREE_CONNECTIVITY)
 
         repeat(iterations) {
-            val scenario = TreeConnectivityScenarioGenerator.generate(nodes, scenarioSize)
+            val scenario = scenarioGenerator.generate(nodes, scenarioSize)
             val slowConnectivity = SlowConnectivity(nodes)
             val connectivity = SequentialEulerTourTree(nodes)
             for (operation in scenario) {
@@ -37,7 +39,7 @@ class EulerTourTreeTest {
     }
 
     @Test
-    fun testSimple() {
+    fun simple() {
         val connectivity = SequentialEulerTourTree(5)
         assertFalse(connectivity.sameComponent(0, 1))
         connectivity.addEdge(0, 1)

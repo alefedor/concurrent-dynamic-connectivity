@@ -10,7 +10,7 @@ import org.jetbrains.kotlinx.lincheck.strategy.stress.StressCTest
 import org.jetbrains.kotlinx.lincheck.verifier.VerifierState
 import org.junit.Test
 
-@StressCTest(actorsAfter = 3, actorsBefore = 3, iterations = 10000)
+@StressCTest(actorsAfter = 3, actorsBefore = 3, iterations = 1000, generator = EulerTourTreeExecutionGenerator::class)
 @Param(name = "a", gen = IntGen::class, conf = "0:4")
 @OpGroupConfig(name = "writer", nonParallel = true)
 class ConcurrentEulerTourTreeConcurrentStressTest : VerifierState() {
@@ -19,7 +19,7 @@ class ConcurrentEulerTourTreeConcurrentStressTest : VerifierState() {
 
     @Operation(group = "writer")
     fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
-        if (!dc.sameComponent(a, b)) dc.addTreeEdge(a, b)
+        dc.addTreeEdge(a, b)
     }
 
     @Operation(group = "writer")
@@ -28,7 +28,7 @@ class ConcurrentEulerTourTreeConcurrentStressTest : VerifierState() {
     }
 
     @Operation
-    fun sameComponents(@Param(name = "a") a: Int, @Param(name = "a") b: Int) = dc.sameComponent(a, b)
+    fun connected(@Param(name = "a") a: Int, @Param(name = "a") b: Int) = dc.connected(a, b)
 
     @Test
     fun test() {

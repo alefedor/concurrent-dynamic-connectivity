@@ -80,7 +80,7 @@ class ConcurrentEulerTourTree(val size: Int) {
         edgeToNode.remove(Pair(v, u))
     }
 
-    fun sameComponent(u: Int, v: Int): Boolean {
+    fun connected(u: Int, v: Int): Boolean {
         if (u == v) return true
 
         while (true) {

@@ -7,7 +7,7 @@ import kotlin.math.min
 interface DynamicConnectivity {
     fun addEdge(u: Int, v: Int)
     fun removeEdge(u: Int, v: Int)
-    fun sameComponent(u: Int, v: Int): Boolean
+    fun connected(u: Int, v: Int): Boolean
 }
 
 class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivity {
@@ -27,7 +27,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
     override fun addEdge(u: Int, v: Int) {
         val edge = Pair(min(u, v), max(u, v))
         ranks[edge] = 0
-        if (!levels[0].sameComponent(u, v)) {
+        if (!levels[0].connected(u, v)) {
             levels[0].addEdge(u, v)
         } else {
             levels[0].node(u).update {
@@ -83,7 +83,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
 
     }
 
-    override fun sameComponent(u: Int, v: Int) = levels[0].sameComponent(u, v)
+    override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
 
     private fun increaseTreeEdgesRank(node: Node, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
@@ -127,7 +127,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
                 }
             iterator.remove()
 
-            if (!levels[rank].sameComponent(edge.first, edge.second)) {
+            if (!levels[rank].connected(edge.first, edge.second)) {
                 // is replacement
                 result = edge
                 break

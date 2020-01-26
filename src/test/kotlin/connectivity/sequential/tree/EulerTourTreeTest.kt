@@ -29,9 +29,9 @@ class EulerTourTreeTest {
                         slowConnectivity.removeEdge(operation.args[0], operation.args[1])
                         connectivity.removeEdge(operation.args[0], operation.args[1])
                     }
-                    OperationType.SAME_COMPONENTS -> assertEquals(
+                    OperationType.CONNECTED -> assertEquals(
                         slowConnectivity.sameComponent(operation.args[0], operation.args[1]),
-                        connectivity.sameComponent(operation.args[0], operation.args[1])
+                        connectivity.connected(operation.args[0], operation.args[1])
                     )
                 }
             }
@@ -41,13 +41,13 @@ class EulerTourTreeTest {
     @Test
     fun simple() {
         val connectivity = SequentialEulerTourTree(5)
-        assertFalse(connectivity.sameComponent(0, 1))
+        assertFalse(connectivity.connected(0, 1))
         connectivity.addEdge(0, 1)
-        assertTrue(connectivity.sameComponent(0, 1))
+        assertTrue(connectivity.connected(0, 1))
         connectivity.addEdge(1, 2)
-        assertTrue(connectivity.sameComponent(0, 2))
+        assertTrue(connectivity.connected(0, 2))
         connectivity.removeEdge(2, 1)
-        assertFalse(connectivity.sameComponent(2, 0))
-        assertTrue(connectivity.sameComponent(0, 1))
+        assertFalse(connectivity.connected(2, 0))
+        assertTrue(connectivity.connected(0, 1))
     }
 }

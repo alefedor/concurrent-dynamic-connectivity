@@ -17,9 +17,9 @@ class EulerTourTreeTest {
     @Test
     fun testSameComponents() {
         val dc = ConcurrentEulerTourTree(5)
-        assertFalse(dc.sameComponent(0, 1))
+        assertFalse(dc.connected(0, 1))
         dc.addTreeEdge(0, 1)
-        assertTrue(dc.sameComponent(0, 1))
+        assertTrue(dc.connected(0, 1))
     }
 
     @Test
@@ -27,7 +27,7 @@ class EulerTourTreeTest {
         val dc = ConcurrentEulerTourTree(5)
         dc.addTreeEdge(0, 1)
         dc.removeTreeEdge(1, 0)
-        assertFalse(dc.sameComponent(0, 1))
+        assertFalse(dc.connected(0, 1))
     }
 
     @Test
@@ -37,7 +37,7 @@ class EulerTourTreeTest {
         dc.addTreeEdge(1, 2)
         for (i in 0 until 5)
             for (j in 0 until 5)
-                assertEquals(i == j || (i <= 2 && j <= 2), dc.sameComponent(i, j))
+                assertEquals(i == j || (i <= 2 && j <= 2), dc.connected(i, j))
     }
 
     @Test
@@ -46,10 +46,10 @@ class EulerTourTreeTest {
         dc.addTreeEdge(4, 0)
         dc.addTreeEdge(2, 0)
         dc.removeTreeEdge(0, 4)
-        assertFalse(dc.sameComponent(2, 4))
+        assertFalse(dc.connected(2, 4))
         dc.addTreeEdge(2, 4)
-        assertTrue(dc.sameComponent(2, 4))
+        assertTrue(dc.connected(2, 4))
         dc.removeTreeEdge(0, 2)
-        assertFalse(dc.sameComponent(4, 0))
+        assertFalse(dc.connected(4, 0))
     }
 }

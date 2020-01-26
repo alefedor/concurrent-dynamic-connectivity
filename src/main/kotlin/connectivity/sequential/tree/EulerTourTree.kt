@@ -7,7 +7,7 @@ import kotlin.random.Random
 interface EulerTourTree {
     fun addEdge(u: Int, v: Int)
     fun removeEdge(u: Int, v: Int)
-    fun sameComponent(u: Int, v: Int): Boolean
+    fun connected(u: Int, v: Int): Boolean
     fun root(u: Int): Node // for grained locking and traversals
     fun node(u: Int): Node // for non-tree edges support
 
@@ -93,7 +93,7 @@ class SequentialEulerTourTree(val size: Int) : EulerTourTree {
         edgeToNode.remove(Pair(v, u))
     }
 
-    override fun sameComponent(u: Int, v: Int): Boolean = root(u) == root(v)
+    override fun connected(u: Int, v: Int): Boolean = root(u) == root(v)
 
     override fun root(u: Int): Node = root(nodes[u])
 

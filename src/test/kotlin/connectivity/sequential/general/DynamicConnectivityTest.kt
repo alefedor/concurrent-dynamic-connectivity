@@ -4,8 +4,6 @@ import connectivity.sequential.DynamicConnectivityScenarioGenerator
 import connectivity.sequential.OperationType
 import connectivity.sequential.ScenarioType
 import connectivity.sequential.SlowConnectivity
-import connectivity.sequential.tree.SequentialEulerTourTree
-import org.junit.Assert
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -31,14 +29,14 @@ class DynamicConnectivityTest {
                         slowConnectivity.removeEdge(operation.args[0], operation.args[1])
                         connectivity.removeEdge(operation.args[0], operation.args[1])
                     }
-                    OperationType.SAME_COMPONENTS -> {
-                        if (slowConnectivity.sameComponent(operation.args[0], operation.args[1]) != connectivity.sameComponent(operation.args[0], operation.args[1])) {
+                    OperationType.CONNECTED -> {
+                        if (slowConnectivity.sameComponent(operation.args[0], operation.args[1]) != connectivity.connected(operation.args[0], operation.args[1])) {
                             scenario.forEach {
                                 print(
                                     when (it.type) {
                                         OperationType.ADD_EDGE -> "add("
                                         OperationType.REMOVE_EDGE -> "remove("
-                                        OperationType.SAME_COMPONENTS -> "same("
+                                        OperationType.CONNECTED -> "same("
                                     }
                                 )
                                 println("${it.args[0]}, ${it.args[1]})")
@@ -49,11 +47,11 @@ class DynamicConnectivityTest {
                                     when (it.type) {
                                         OperationType.ADD_EDGE -> "add("
                                         OperationType.REMOVE_EDGE -> "remove("
-                                        OperationType.SAME_COMPONENTS -> "same("
+                                        OperationType.CONNECTED -> "same("
                                     }
                                 )
                                 println("${it.args[0]}, ${it.args[1]})")
-                                println("${slowConnectivity.sameComponent(operation.args[0], operation.args[1])} : ${connectivity.sameComponent(operation.args[0], operation.args[1])}")
+                                println("${slowConnectivity.sameComponent(operation.args[0], operation.args[1])} : ${connectivity.connected(operation.args[0], operation.args[1])}")
                             }
                             fail()
                         }
@@ -66,18 +64,18 @@ class DynamicConnectivityTest {
     @Test
     fun simple() {
         val connectivity = SequentialDynamicConnectivity(5)
-        assertFalse(connectivity.sameComponent(0, 1))
+        assertFalse(connectivity.connected(0, 1))
         connectivity.addEdge(0, 1)
-        assertTrue(connectivity.sameComponent(0, 1))
+        assertTrue(connectivity.connected(0, 1))
         connectivity.addEdge(1, 2)
-        assertTrue(connectivity.sameComponent(0, 2))
+        assertTrue(connectivity.connected(0, 2))
         connectivity.addEdge(0, 2)
-        assertTrue(connectivity.sameComponent(0, 2))
+        assertTrue(connectivity.connected(0, 2))
         connectivity.removeEdge(2, 1)
-        assertTrue(connectivity.sameComponent(2, 0))
+        assertTrue(connectivity.connected(2, 0))
         connectivity.removeEdge(0, 2)
-        assertFalse(connectivity.sameComponent(2, 0))
-        assertTrue(connectivity.sameComponent(0, 1))
+        assertFalse(connectivity.connected(2, 0))
+        assertTrue(connectivity.connected(0, 1))
     }
 
     @Test
@@ -92,6 +90,6 @@ class DynamicConnectivityTest {
         connectivity.removeEdge(0, 4)
         connectivity.addEdge(0, 5)
         connectivity.removeEdge(0, 1)
-        assertTrue(connectivity.sameComponent(4, 2))
+        assertTrue(connectivity.connected(4, 2))
     }
 }

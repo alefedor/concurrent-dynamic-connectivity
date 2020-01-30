@@ -1,17 +1,15 @@
-package connectivity.sequential.general
+package connectivity.concurrent.general
 
-import connectivity.sequential.tree.*
+import connectivity.sequential.general.DynamicConnectivity
+import connectivity.concurrent.tree.ConcurrentEulerTourTree
+import connectivity.concurrent.tree.Node
+import connectivity.concurrent.tree.recalculate
+import connectivity.concurrent.tree.update
 import kotlin.math.max
 import kotlin.math.min
 
-interface DynamicConnectivity {
-    fun addEdge(u: Int, v: Int)
-    fun removeEdge(u: Int, v: Int)
-    fun connected(u: Int, v: Int): Boolean
-}
-
-class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivity {
-    private val levels: Array<SequentialEulerTourTree>
+class ImprovedCoarseGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
+    private val levels: Array<ConcurrentEulerTourTree>
     private val ranks = HashMap<Pair<Int, Int>, Int>()
 
     init {
@@ -21,13 +19,14 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
             levelNumber++
             maxSize *= 2
         }
-        levels = Array(levelNumber) { SequentialEulerTourTree(size) }
+        levels = Array(levelNumber) { ConcurrentEulerTourTree(size) }
     }
 
+    @Synchronized
     override fun addEdge(u: Int, v: Int) {
         val edge = Pair(min(u, v), max(u, v))
         ranks[edge] = 0
-        if (!levels[0].connected(u, v)) {
+        if (!levels[0].connectedSimple(u, v, null)) {
             levels[0].addEdge(u, v)
         } else {
             levels[0].node(u).update {
@@ -39,6 +38,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
         }
     }
 
+    @Synchronized
     override fun removeEdge(u: Int, v: Int) {
         val edge = Pair(min(u, v), max(u, v))
         val rank = ranks[edge] ?: return
@@ -55,14 +55,8 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
             }
             return
         }
-
-        for (r in 0..rank)
-            levels[r].removeEdge(u, v)
-
         for (r in rank downTo 0) {
-            val searchLevel = levels[r]
-            var uRoot = searchLevel.root(u)
-            var vRoot = searchLevel.root(v)
+            var (uRoot, vRoot) = levels[r].removeEdge(u, v, false)
 
             if (uRoot.size > vRoot.size) {
                 val tmp = uRoot
@@ -70,15 +64,36 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
                 vRoot = tmp
             }
 
+            val lowerRoot = if (uRoot.parent != null) uRoot else vRoot
+
             // promote tree edges for less component
 
+            levels[r].lowerRoot = lowerRoot
+
             increaseTreeEdgesRank(uRoot, u, v, r)
-            val replacementEdge = findReplacement(uRoot, r)
+            val replacementEdge = findReplacement(uRoot, r, lowerRoot)
             if (replacementEdge != null) {
-                for (i in 0..r)
-                    levels[i].addEdge(replacementEdge.first, replacementEdge.second, i == r)
+                for (i in r downTo 0) {
+                    val lr = if (i == r) {
+                        lowerRoot
+                    } else {
+                        val (ur, vr) = levels[i].removeEdge(u, v, false)
+                        if (ur.parent != null) ur else vr
+                    }
+
+                    levels[i].whileStillInSame(lr) {
+                        levels[i].addEdge(replacementEdge.first, replacementEdge.second, i == r)
+                    }
+                }
                 break
+            } else {
+                // linearization point, do an actual split on this level
+                uRoot.parent = null
+                vRoot.parent = null
+                uRoot.version.inc()
+                vRoot.version.inc()
             }
+            levels[r].lowerRoot = null
         }
 
     }
@@ -107,7 +122,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
         node.recalculate()
     }
 
-    private fun findReplacement(node: Node, rank: Int): Pair<Int, Int>? {
+    private fun findReplacement(node: Node, rank: Int, lowerRoot: Node): Pair<Int, Int>? {
         if (!node.hasNonTreeEdges) return null
 
         val iterator = node.nonTreeEdges.iterator()
@@ -127,7 +142,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
                 }
             iterator.remove()
 
-            if (!levels[rank].connected(edge.first, edge.second)) {
+            if (!levels[rank].connectedSimple(edge.first, edge.second, lowerRoot)) {
                 // is replacement
                 result = edge
                 break
@@ -144,12 +159,12 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
         }
 
         if (result == null) {
-            val leftResult = node.left?.let { findReplacement(it, rank) }
+            val leftResult = node.left?.let { findReplacement(it, rank, lowerRoot) }
             if (leftResult != null)
                 result = leftResult
         }
         if (result == null) {
-            val rightResult = node.right?.let { findReplacement(it, rank) }
+            val rightResult = node.right?.let { findReplacement(it, rank, lowerRoot) }
             if (rightResult != null)
                 result = rightResult
         }

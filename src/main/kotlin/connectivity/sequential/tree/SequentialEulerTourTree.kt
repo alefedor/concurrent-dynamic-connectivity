@@ -4,17 +4,20 @@ import java.util.*
 import kotlin.collections.HashSet
 import kotlin.random.Random
 
-interface EulerTourTree {
+interface TreeDynamicConnectivity {
     fun addEdge(u: Int, v: Int)
     fun removeEdge(u: Int, v: Int)
     fun connected(u: Int, v: Int): Boolean
-    fun root(u: Int): Node // for grained locking and traversals
-    fun node(u: Int): Node // for non-tree edges support
-
 }
 
 class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>? = null) {
     var parent: Node? = null
+        set(value) {
+            if (value == this) {
+                println("!!")
+            }
+            field = value
+        }
     var left: Node? = null
     var right: Node? = null
     var size: Int = 1
@@ -24,7 +27,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
     var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != null
 }
 
-class SequentialEulerTourTree(val size: Int) : EulerTourTree {
+class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<Node>
     private val edgeToNode = mutableMapOf<Pair<Int, Int>, Node>()
     private val random = Random(0)
@@ -37,11 +40,9 @@ class SequentialEulerTourTree(val size: Int) : EulerTourTree {
         nodes = Array(size) { Node(priorities[it]) }
     }
 
-    override fun addEdge(u: Int, v: Int) {
-        if (edgeToNode[Pair(u, v)] != null) {
-            return
-        }
+    override fun addEdge(u: Int, v: Int) = addEdge(u, v, true)
 
+    fun addEdge(u: Int, v: Int, isCurrentLevelTreeEdge: Boolean) {
         val uNode = nodes[u]
         val vNode = nodes[v]
 
@@ -51,8 +52,13 @@ class SequentialEulerTourTree(val size: Int) : EulerTourTree {
 
         val uRoot = root(uNode)
         val vRoot = root(vNode)
-        val uv = Node(size + random.nextInt(10 * size), false, Pair(u, v))
-        val vu = Node(size + random.nextInt(10 * size), false, Pair(v, u))
+
+        assert(uRoot != vRoot) {
+            println("!!")
+        }
+
+        val uv = Node(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(u, v) else null)
+        val vu = Node(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(v, u) else null)
 
         edgeToNode[Pair(u, v)] = uv
         edgeToNode[Pair(v, u)] = vu
@@ -61,10 +67,6 @@ class SequentialEulerTourTree(val size: Int) : EulerTourTree {
     }
 
     override fun removeEdge(u: Int, v: Int) {
-        if (edgeToNode[Pair(u, v)] == null) {
-            return
-        }
-
         val edgeNode = edgeToNode[Pair(u, v)]!!
         val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
 
@@ -95,9 +97,9 @@ class SequentialEulerTourTree(val size: Int) : EulerTourTree {
 
     override fun connected(u: Int, v: Int): Boolean = root(u) == root(v)
 
-    override fun root(u: Int): Node = root(nodes[u])
+    fun root(u: Int): Node = root(nodes[u])
 
-    override fun node(u: Int): Node = nodes[u]
+    fun node(u: Int): Node = nodes[u]
 
     private fun root(n: Node): Node {
         var node = n

@@ -11,22 +11,23 @@ import org.jetbrains.kotlinx.lincheck.execution.ExecutionGenerator
 import org.jetbrains.kotlinx.lincheck.execution.ExecutionScenario
 import java.lang.reflect.Method
 import java.util.*
+import kotlin.math.max
 
 
-class EulerTourTreeExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure) :
+abstract class DynamicConnectivityExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure, scenarioType: ScenarioType) :
     ExecutionGenerator(testConfiguration, testStructure) {
     private val n: Int
     private val addEdgeMethod: Method
     private val removeEdgeMethod: Method
     private val connectedMethod: Method
-    private val scenarioGenerator = DynamicConnectivityScenarioGenerator(ScenarioType.TREE_CONNECTIVITY)
+    private val scenarioGenerator = DynamicConnectivityScenarioGenerator(scenarioType)
     private val random = Random()
 
     init {
         var m = 0
         val iterations = 600
         repeat(iterations) {
-            m = Math.max(m, testStructure.actorGenerators[0].generate().arguments.map { java.lang.Integer::class.java.cast(it).toInt() }.max()!!)
+            m = max(m, testStructure.actorGenerators[0].generate().arguments.map { Integer::class.java.cast(it).toInt() }.max()!!)
         }
         n = m
 
@@ -63,5 +64,10 @@ class EulerTourTreeExecutionGenerator(testConfiguration: CTestConfiguration, tes
     private fun addEdgeActor(u: Int, v: Int) = Actor(addEdgeMethod, listOf(u, v), emptyList())
     private fun removeEdgeActor(u: Int, v: Int) = Actor(removeEdgeMethod, listOf(u, v), emptyList())
     private fun connectedActor(u: Int, v: Int) = Actor(connectedMethod, listOf(u, v), emptyList())
-
 }
+
+class TreeDynamicConnectivityExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure) :
+    DynamicConnectivityExecutionGenerator(testConfiguration, testStructure, ScenarioType.TREE_CONNECTIVITY)
+
+class GeneralDynamicConnectivityExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure) :
+    DynamicConnectivityExecutionGenerator(testConfiguration, testStructure, ScenarioType.GENERAL_CONNECTIVITY)

@@ -1,24 +1,35 @@
 package connectivity.sequential.general
 
+import connectivity.concurrent.general.CoarseGrainedLockingDynamicConnectivity
+import connectivity.concurrent.general.ImprovedCoarseGrainedLockingDynamicConnectivity
 import connectivity.sequential.DynamicConnectivityScenarioGenerator
 import connectivity.sequential.OperationType
 import connectivity.sequential.ScenarioType
 import connectivity.sequential.SlowConnectivity
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
-class DynamicConnectivityTest {
+enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
+    SequentialDynamicConnectivity(::SequentialDynamicConnectivity),
+    CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
+    //ImprovedCoarseGrainedLockingDynamicConnectivity(::ImprovedCoarseGrainedLockingDynamicConnectivity)
+}
+
+@RunWith(Parameterized::class)
+class DynamicConnectivityTest(private val dcp: GeneralDynamicConnectivityConstructor) {
     @Test
     fun stress() {
-        val iterations = 10000000
-        val nodes = 6
-        val scenarioSize = 20
+        val iterations = 1000000
+        val nodes = 8
+        val scenarioSize = 25
         val scenarioGenerator = DynamicConnectivityScenarioGenerator(ScenarioType.GENERAL_CONNECTIVITY)
 
         repeat(iterations) {
             val scenario = scenarioGenerator.generate(nodes, scenarioSize)
             val slowConnectivity = SlowConnectivity(nodes)
-            val connectivity = SequentialDynamicConnectivity(nodes)
+            val connectivity = dcp.construct(nodes)
             for (operation in scenario) {
                 when (operation.type) {
                     OperationType.ADD_EDGE -> {
@@ -63,7 +74,7 @@ class DynamicConnectivityTest {
 
     @Test
     fun simple() {
-        val connectivity = SequentialDynamicConnectivity(5)
+        val connectivity = dcp.construct(5)
         assertFalse(connectivity.connected(0, 1))
         connectivity.addEdge(0, 1)
         assertTrue(connectivity.connected(0, 1))
@@ -78,18 +89,9 @@ class DynamicConnectivityTest {
         assertTrue(connectivity.connected(0, 1))
     }
 
-    @Test
-    fun failing() {
-        val connectivity = SequentialDynamicConnectivity(6)
-        connectivity.addEdge(4, 5)
-        connectivity.addEdge(0, 1)
-        connectivity.addEdge(5, 3)
-        connectivity.addEdge(1, 2)
-        connectivity.addEdge(4, 0)
-        connectivity.addEdge(2, 0)
-        connectivity.removeEdge(0, 4)
-        connectivity.addEdge(0, 5)
-        connectivity.removeEdge(0, 1)
-        assertTrue(connectivity.connected(4, 2))
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters
+        fun dcpConstructors() = GeneralDynamicConnectivityConstructor.values()
     }
 }

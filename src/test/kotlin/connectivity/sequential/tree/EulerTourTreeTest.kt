@@ -1,24 +1,33 @@
 package connectivity.sequential.tree
 
+import connectivity.concurrent.tree.ConcurrentEulerTourTree
 import connectivity.sequential.OperationType
 import connectivity.sequential.SlowConnectivity
 import connectivity.sequential.DynamicConnectivityScenarioGenerator
 import connectivity.sequential.ScenarioType
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
-class EulerTourTreeTest {
+enum class TreeDynamicConnectivityConstructor(val construct: (size: Int) -> TreeDynamicConnectivity) {
+    SequentialEulerTourTree(::SequentialEulerTourTree),
+    ConcurrentEulerTourTree(::ConcurrentEulerTourTree)
+}
+
+@RunWith(Parameterized::class)
+class EulerTourTreeTest(private val dcp: TreeDynamicConnectivityConstructor) {
     @Test
     fun stress() {
-        val iterations = 10000000
-        val nodes = 6
-        val scenarioSize = 20
+        val iterations = 5000000
+        val nodes = 8
+        val scenarioSize = 25
         val scenarioGenerator = DynamicConnectivityScenarioGenerator(ScenarioType.TREE_CONNECTIVITY)
 
         repeat(iterations) {
             val scenario = scenarioGenerator.generate(nodes, scenarioSize)
             val slowConnectivity = SlowConnectivity(nodes)
-            val connectivity = SequentialEulerTourTree(nodes)
+            val connectivity = dcp.construct(nodes)
             for (operation in scenario) {
                 when (operation.type) {
                     OperationType.ADD_EDGE -> {
@@ -40,7 +49,7 @@ class EulerTourTreeTest {
 
     @Test
     fun simple() {
-        val connectivity = SequentialEulerTourTree(5)
+        val connectivity = dcp.construct(5)
         assertFalse(connectivity.connected(0, 1))
         connectivity.addEdge(0, 1)
         assertTrue(connectivity.connected(0, 1))
@@ -49,5 +58,11 @@ class EulerTourTreeTest {
         connectivity.removeEdge(2, 1)
         assertFalse(connectivity.connected(2, 0))
         assertTrue(connectivity.connected(0, 1))
+    }
+
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters
+        fun dcpConstructors() = TreeDynamicConnectivityConstructor.values()
     }
 }

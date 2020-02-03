@@ -10,9 +10,9 @@ import org.jetbrains.kotlinx.lincheck.strategy.stress.StressCTest
 import org.jetbrains.kotlinx.lincheck.verifier.VerifierState
 import org.junit.Test
 
-const val n = 6
+const val n = 7
 
-@StressCTest(actorsAfter = 5, actorsBefore = 5, iterations = 10000, generator = GeneralDynamicConnectivityExecutionGenerator::class, requireStateEquivalenceImplCheck = false)
+@StressCTest(actorsAfter = 10, actorsBefore = 10, actorsPerThread = 8, iterations = 10000, generator = GeneralDynamicConnectivityExecutionGenerator::class, requireStateEquivalenceImplCheck = false)
 @Param(name = "a", gen = IntGen::class, conf = "0:${n - 1}")
 @OpGroupConfig(name = "writer", nonParallel = true)
 class ConcurrentDynamicConnectivityConcurrentStressTest {

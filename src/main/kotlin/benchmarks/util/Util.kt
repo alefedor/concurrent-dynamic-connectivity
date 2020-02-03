@@ -4,6 +4,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.PrintWriter
+import java.lang.RuntimeException
 import java.net.URL
 import java.nio.channels.Channels
 import java.nio.file.Paths
@@ -21,7 +22,12 @@ fun randomGraph(nodes: Int, edges: Int): Graph {
             val first = r.nextInt(nodes)
             val second = r.nextInt(nodes)
             if (first == second) continue
-            if (presentEdges.contains(bidirectionalEdge(min(first, second), max(first, second)))) continue
+            if (presentEdges.contains(
+                    bidirectionalEdge(
+                        min(first, second),
+                        max(first, second)
+                    )
+                )) continue
             edgesList.add(bidirectionalEdge(first, second))
             presentEdges.add(bidirectionalEdge(first, second))
             break
@@ -60,7 +66,10 @@ fun downloadOrCreateAndParseGraph(name: String, type: String, url: String): Grap
     }
 
     val rnd = Random(454)
-    return Graph(graph.nodes, graph.edges.toMutableList().shuffled(rnd).toLongArray())
+    return Graph(
+        graph.nodes,
+        graph.edges.toMutableList().shuffled(rnd).toLongArray()
+    )
 }
 
 fun writeGrFile(filename: String, graph: Graph) {

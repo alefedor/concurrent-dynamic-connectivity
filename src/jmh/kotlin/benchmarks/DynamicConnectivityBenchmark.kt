@@ -1,0 +1,132 @@
+package benchmarks
+
+import benchmarks.util.*
+import org.openjdk.jmh.annotations.*
+import org.openjdk.jmh.results.format.ResultFormatType
+import org.openjdk.jmh.runner.Runner
+import org.openjdk.jmh.runner.RunnerException
+import org.openjdk.jmh.runner.options.OptionsBuilder
+import java.util.concurrent.TimeUnit
+
+@State(Scope.Thread)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Measurement(iterations = 12, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+open class DynamicConnectivityBenchmark {
+    @Param
+    open var graphParams: GraphParams = GraphParams.USA_ROADS
+
+    lateinit var scenario: Scenario
+    lateinit var scenarioExecutor: ScenarioExecutor
+
+    @Param
+    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedLockingDCP
+
+    @Param("1", "2", "4", "8", "16", "32", "64", "96", "128")
+    open var workers: Int = 0
+
+    @Benchmark
+    fun benchmark() {
+        scenarioExecutor.run()
+    }
+
+    @Setup(Level.Trial)
+    fun initialize() {
+        val graph = GraphServer.getLookup().graphByParams(graphParams)
+        scenario = ScenarioGenerator.generate(graph, workers, 20000000 / workers, 1, 1)
+    }
+
+    @Setup(Level.Invocation)
+    fun initializeInvocation() {
+        scenarioExecutor = ScenarioExecutor(scenario, dcpConstructor.construct)
+    }
+
+    @Setup(Level.Invocation)
+    fun flushOut() {
+        println()
+    }
+}
+
+@State(Scope.Thread)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Measurement(iterations = 12, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+open class DynamicConnectivityBenchmarkMoreReads {
+    @Param
+    open var graphParams: GraphParams = GraphParams.USA_ROADS
+
+    lateinit var scenario: Scenario
+    lateinit var scenarioExecutor: ScenarioExecutor
+
+    @Param
+    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedLockingDCP
+
+    @Param("1", "2", "4", "8", "16", "32", "64", "96", "128")
+    open var workers: Int = 0
+
+    @Benchmark
+    fun benchmark() {
+        scenarioExecutor.run()
+    }
+
+    @Setup(Level.Trial)
+    fun initialize() {
+        val graph = GraphServer.getLookup().graphByParams(graphParams)
+        scenario = ScenarioGenerator.generate(graph, workers, 20000000 / workers, 1, 5)
+    }
+
+    @Setup(Level.Invocation)
+    fun initializeInvocation() {
+        scenarioExecutor = ScenarioExecutor(scenario, dcpConstructor.construct)
+    }
+
+    @Setup(Level.Invocation)
+    fun flushOut() {
+        println()
+    }
+}
+
+@Throws(RunnerException::class)
+fun main() {
+    testGraphs()
+
+    val dcpOptions = OptionsBuilder()
+        .include(DynamicConnectivityBenchmark::class.java.simpleName)
+        //.addProfiler(LinuxPerfAsmProfiler::class.java)
+        //.addProfiler(LinuxPerfNormProfiler::class.java)
+        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=50")
+        .forks(1)
+        .resultFormat(ResultFormatType.CSV)
+        .result("dcp_results.csv")
+        .build()
+    Runner(dcpOptions).run()
+
+    val dcpOptionsMoreReads = OptionsBuilder()
+        .include(DynamicConnectivityBenchmarkMoreReads::class.java.simpleName)
+        //.addProfiler(LinuxPerfAsmProfiler::class.java)
+        //.addProfiler(LinuxPerfNormProfiler::class.java)
+        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=50")
+        .forks(1)
+        .resultFormat(ResultFormatType.CSV)
+        .result("dcp_results_more_reads.csv")
+        .build()
+    Runner(dcpOptionsMoreReads).run()
+}
+
+fun testGraphs() {
+    for (g in GraphParams.values()) {
+        val graph = GraphServer.getLookup().graphByParams(g)
+        testGraphCorrectness(graph, g.name)
+    }
+}
+
+fun testGraphCorrectness(graph: Graph, name: String) {
+    val n = graph.nodes
+    println("Graph $name with $n nodes and ${graph.edges.size} edges")
+    for (e in graph.edges) {
+        check(e.from() in 0 until n)
+        check(e.to() in 0 until n)
+    }
+}

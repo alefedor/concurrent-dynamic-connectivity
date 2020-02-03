@@ -11,8 +11,8 @@ import java.util.concurrent.TimeUnit
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 12, time = 1, timeUnit = TimeUnit.MILLISECONDS)
-@Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 8, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 2, time = 1, timeUnit = TimeUnit.MILLISECONDS)
 open class DynamicConnectivityBenchmark {
     @Param
     open var graphParams: GraphParams = GraphParams.USA_ROADS
@@ -34,7 +34,7 @@ open class DynamicConnectivityBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = ScenarioGenerator.generate(graph, workers, 20000000 / workers, 1, 1)
+        scenario = ScenarioGenerator.generate(graph, workers, 10000000 / workers, 1, 1)
     }
 
     @Setup(Level.Invocation)
@@ -51,8 +51,8 @@ open class DynamicConnectivityBenchmark {
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 12, time = 1, timeUnit = TimeUnit.MILLISECONDS)
-@Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 8, time = 1, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 2, time = 1, timeUnit = TimeUnit.MILLISECONDS)
 open class DynamicConnectivityBenchmarkMoreReads {
     @Param
     open var graphParams: GraphParams = GraphParams.USA_ROADS
@@ -74,7 +74,7 @@ open class DynamicConnectivityBenchmarkMoreReads {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = ScenarioGenerator.generate(graph, workers, 20000000 / workers, 1, 5)
+        scenario = ScenarioGenerator.generate(graph, workers, 10000000 / workers, 1, 5)
     }
 
     @Setup(Level.Invocation)
@@ -97,6 +97,7 @@ fun main() {
         //.addProfiler(LinuxPerfAsmProfiler::class.java)
         //.addProfiler(LinuxPerfNormProfiler::class.java)
         //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=50")
+        .jvmArgs("-Xmx10g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("dcp_results.csv")
@@ -108,6 +109,7 @@ fun main() {
         //.addProfiler(LinuxPerfAsmProfiler::class.java)
         //.addProfiler(LinuxPerfNormProfiler::class.java)
         //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=50")
+        .jvmArgs("-Xmx10g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("dcp_results_more_reads.csv")
@@ -126,7 +128,11 @@ fun testGraphCorrectness(graph: Graph, name: String) {
     val n = graph.nodes
     println("Graph $name with $n nodes and ${graph.edges.size} edges")
     for (e in graph.edges) {
-        check(e.from() in 0 until n)
-        check(e.to() in 0 until n)
+        check(e.from() in 0 until n) {
+            println("${e.from()} >= $n")
+        }
+        check(e.to() in 0 until n) {
+            println("${e.to()} >= $n")
+        }
     }
 }

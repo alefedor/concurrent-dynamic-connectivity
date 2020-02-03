@@ -24,11 +24,11 @@ lateinit var INTERNET_TOPOLOGY_GRAPH: Graph
 
 
 enum class GraphParams : Serializable {
-    USA_ROADS,
+//    USA_ROADS,
     RANDOM_N,
     RANDOM_NLOG,
-    RANDOM_NSQRT,
-    BERKELEY_STANFORD_WEB,
+//    RANDOM_NSQRT,
+//    BERKELEY_STANFORD_WEB,
     INTERNET_TOPOLOGY
 }
 
@@ -49,12 +49,12 @@ interface GraphServerInterface : Remote {
 
 class GraphServer : UnicastRemoteObject(), GraphServerInterface {
     override fun graphByParams(paramsBoruvka: GraphParams) = when (paramsBoruvka) {
-        GraphParams.USA_ROADS -> {
+        /*GraphParams.USA_ROADS -> {
             if (!::USA_ROADS_GRAPH.isInitialized)
                 USA_ROADS_GRAPH =
                     loadGraph(USA_ROADS_GRAPH_PARAMS)
             USA_ROADS_GRAPH
-        }
+        }*/
         GraphParams.RANDOM_N -> {
             if (!::RANDOM_GRAPH_N.isInitialized)
                 RANDOM_GRAPH_N =
@@ -67,7 +67,7 @@ class GraphServer : UnicastRemoteObject(), GraphServerInterface {
                     loadGraph(RANDOM_GRAPH_NLOG_PARAMS)
             RANDOM_GRAPH_NLOG
         }
-        GraphParams.RANDOM_NSQRT -> {
+        /*GraphParams.RANDOM_NSQRT -> {
             if (!::RANDOM_GRAPH_NSQRT.isInitialized)
                 RANDOM_GRAPH_NSQRT =
                     loadGraph(RANDOM_GRAPH_NSQRT_PARAMS)
@@ -78,7 +78,7 @@ class GraphServer : UnicastRemoteObject(), GraphServerInterface {
                 BERKELEY_STANFORD_WEB_GRAPH =
                     loadGraph(BERKELEY_STANFORD_WEB_GRAPH_PARAMS)
             BERKELEY_STANFORD_WEB_GRAPH
-        }
+        }*/
         GraphParams.INTERNET_TOPOLOGY -> {
             if (!::INTERNET_TOPOLOGY_GRAPH.isInitialized)
                 INTERNET_TOPOLOGY_GRAPH =

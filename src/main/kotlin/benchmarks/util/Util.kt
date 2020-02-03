@@ -14,7 +14,7 @@ import kotlin.math.min
 import kotlin.random.Random
 
 fun randomGraph(nodes: Int, edges: Int): Graph {
-    val r = Random(0) // ALWAYS USE THE SAME SEED
+    val r = Random(0)
     val edgesList = mutableListOf<Long>()
     val presentEdges = mutableSetOf<Long>()
     repeat(edges) {
@@ -39,9 +39,9 @@ fun randomGraph(nodes: Int, edges: Int): Graph {
 fun downloadOrCreateAndParseGraph(name: String, type: String, url: String): Graph {
     val gz = type.endsWith("gz")
     val ext = type.split(" ")[0]
-    val graphFile = "$name." + (if (ext.startsWith("rand")) "gr" else ext) + (if (gz) ".gz" else "")
+    val graphFile = "$name." + (if (ext == "rand") "gr" else ext) + (if (gz) ".gz" else "")
     if (!Paths.get(graphFile).toFile().exists()) {
-        if (ext.equals("rand")) {
+        if (ext == "rand") {
             val parts = url.split(" ")
             val n = parts[0].toInt()
             val m = parts[1].toInt()
@@ -78,7 +78,7 @@ fun writeGrFile(filename: String, graph: Graph) {
     PrintWriter(filename).use { pw ->
         pw.println("p sp ${graph.nodes} $m")
         graph.edges.forEach { edge ->
-            pw.println("a ${edge.from()} ${edge.to()} ${0}")
+            pw.println("a ${edge.from() + 1} ${edge.to() + 1} ${0}")
         }
     }
 }

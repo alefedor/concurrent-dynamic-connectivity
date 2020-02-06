@@ -15,15 +15,15 @@ import java.util.concurrent.TimeUnit
 @Warmup(iterations = 2, time = 1, timeUnit = TimeUnit.MILLISECONDS)
 open class DynamicConnectivityBenchmark {
     @Param
-    open var graphParams: GraphParams = GraphParams.USA_ROADS
+    open var graphParams: GraphParams = GraphParams.INTERNET_TOPOLOGY
 
     lateinit var scenario: Scenario
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedLockingDCP
+    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedReadWriteLockingDCP
 
-    @Param("1", "2", "4", "8", "16", "32", "64", "96", "128")
+    @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
 
     @Benchmark
@@ -55,15 +55,15 @@ open class DynamicConnectivityBenchmark {
 @Warmup(iterations = 2, time = 1, timeUnit = TimeUnit.MILLISECONDS)
 open class DynamicConnectivityBenchmarkMoreReads {
     @Param
-    open var graphParams: GraphParams = GraphParams.USA_ROADS
+    open var graphParams: GraphParams = GraphParams.INTERNET_TOPOLOGY
 
     lateinit var scenario: Scenario
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedLockingDCP
+    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedReadWriteLockingDCP
 
-    @Param("1", "2", "4", "8", "16", "32", "64", "96", "128")
+    @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
 
     @Benchmark
@@ -96,11 +96,11 @@ fun main() {
         .include(DynamicConnectivityBenchmark::class.java.simpleName)
         //.addProfiler(LinuxPerfAsmProfiler::class.java)
         //.addProfiler(LinuxPerfNormProfiler::class.java)
-        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=50")
-        .jvmArgs("-Xmx10g")
+        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx50g", "-Xms2g")
+        .jvmArgs("-Xmx50g", "-Xms2g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("dcp_results.csv")
+        .result("dcp_results_read_write.csv")
         .build()
     Runner(dcpOptions).run()
 
@@ -108,8 +108,8 @@ fun main() {
         .include(DynamicConnectivityBenchmarkMoreReads::class.java.simpleName)
         //.addProfiler(LinuxPerfAsmProfiler::class.java)
         //.addProfiler(LinuxPerfNormProfiler::class.java)
-        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=50")
-        .jvmArgs("-Xmx10g")
+        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx50g", "-Xms2g")
+        .jvmArgs("-Xmx50g", "-Xms2g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("dcp_results_more_reads.csv")

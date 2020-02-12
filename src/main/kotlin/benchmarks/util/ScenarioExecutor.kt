@@ -1,6 +1,9 @@
 package benchmarks.util
 
 import connectivity.sequential.general.DynamicConnectivity
+import java.util.concurrent.ThreadLocalRandom
+
+const val workAmount = 40
 
 class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicConnectivity) {
     private val dcp = dcpConstructor(scenario.nodes)
@@ -27,6 +30,7 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
                             dcp.removeEdge(query.from(), query.to())
                         }
                     }
+                    work(workAmount)
                 }
             }
         }
@@ -35,5 +39,13 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
     fun run() {
         threads.forEach { it.start() }
         threads.forEach { it.join() }
+    }
+
+    private inline fun work(amount: Int) {
+        val p = 1.0 / amount
+        val r = ThreadLocalRandom.current()
+        while (true) {
+            if (r.nextDouble() < p) break
+        }
     }
 }

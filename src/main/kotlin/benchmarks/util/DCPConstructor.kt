@@ -7,6 +7,6 @@ import connectivity.sequential.general.DynamicConnectivity
 
 enum class DCPConstructor(val construct: (Int) -> DynamicConnectivity) {
     CoarseGrainedLockingDCP(::CoarseGrainedLockingDynamicConnectivity),
-    ImprovedCoarseGrainedLockingDCP(::ImprovedCoarseGrainedLockingDynamicConnectivity),
-    CoarseGrainedReadWriteLockingDCP(::CoarseGrainedReadWriteLockingDynamicConnectivity),
+    //ImprovedCoarseGrainedLockingDCP(::ImprovedCoarseGrainedLockingDynamicConnectivity),
+    //CoarseGrainedReadWriteLockingDCP(::CoarseGrainedReadWriteLockingDynamicConnectivity),
 }

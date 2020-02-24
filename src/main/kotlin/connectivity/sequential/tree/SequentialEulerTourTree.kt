@@ -12,12 +12,6 @@ interface TreeDynamicConnectivity {
 
 class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>? = null) {
     var parent: Node? = null
-        set(value) {
-            if (value == this) {
-                println("!!")
-            }
-            field = value
-        }
     var left: Node? = null
     var right: Node? = null
     var size: Int = 1
@@ -52,10 +46,6 @@ class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
         val uRoot = root(uNode)
         val vRoot = root(vNode)
-
-        assert(uRoot != vRoot) {
-            println("!!")
-        }
 
         val uv = Node(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(u, v) else null)
         val vu = Node(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(v, u) else null)

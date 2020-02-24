@@ -22,7 +22,7 @@ open class DynamicConnectivityBenchmark {
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedLockingDCP
+    open var dcpConstructor: DCPConstructor = DCPConstructor.FineGrainedLockingDCP
 
     @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
@@ -62,7 +62,7 @@ open class DynamicConnectivityBenchmarkMoreReads {
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedLockingDCP
+    open var dcpConstructor: DCPConstructor = DCPConstructor.FineGrainedLockingDCP
 
     @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
@@ -102,7 +102,7 @@ open class DynamicConnectivityBenchmarkMoreMoreReads {
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedLockingDCP
+    open var dcpConstructor: DCPConstructor = DCPConstructor.FineGrainedLockingDCP
 
     @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
@@ -137,8 +137,8 @@ fun main() {
         .include(DynamicConnectivityBenchmark::class.java.simpleName)
         //.addProfiler(LinuxPerfAsmProfiler::class.java)
         //.addProfiler(LinuxPerfNormProfiler::class.java)
-        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx50g", "-Xms2g")
-        //.jvmArgs("-Xmx50g", "-Xms2g")
+        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx50g", "-Xms2g")
+        .jvmArgs("-Xmx50g", "-Xms2g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("dcp_results_lock_elision.csv")
@@ -149,8 +149,8 @@ fun main() {
         .include(DynamicConnectivityBenchmarkMoreReads::class.java.simpleName)
         //.addProfiler(LinuxPerfAsmProfiler::class.java)
         //.addProfiler(LinuxPerfNormProfiler::class.java)
-        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx50g", "-Xms2g")
-        //.jvmArgs("-Xmx50g", "-Xms2g")
+        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx50g", "-Xms2g")
+        .jvmArgs("-Xmx50g", "-Xms2g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("dcp_results_more_reads_lock_elision.csv")
@@ -162,8 +162,8 @@ fun main() {
         .include(DynamicConnectivityBenchmarkMoreMoreReads::class.java.simpleName)
         //.addProfiler(LinuxPerfAsmProfiler::class.java)
         //.addProfiler(LinuxPerfNormProfiler::class.java)
-        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx50g", "-Xms2g")
-        //.jvmArgs("-Xmx50g", "-Xms2g")
+        //.jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx50g", "-Xms2g")
+        .jvmArgs("-Xmx50g", "-Xms2g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("dcp_results_more_more_reads_lock_elision.csv")

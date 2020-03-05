@@ -22,7 +22,7 @@ open class DynamicConnectivityBenchmark {
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.FineGrainedLockingDCP
+    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedReadWriteFairLockingDynamicConnectivity
 
     @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
@@ -62,7 +62,7 @@ open class DynamicConnectivityBenchmarkMoreReads {
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.FineGrainedLockingDCP
+    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedReadWriteFairLockingDynamicConnectivity
 
     @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
@@ -102,7 +102,7 @@ open class DynamicConnectivityBenchmarkMoreMoreReads {
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.FineGrainedLockingDCP
+    open var dcpConstructor: DCPConstructor = DCPConstructor.CoarseGrainedReadWriteFairLockingDynamicConnectivity
 
     @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0

@@ -143,7 +143,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
     private fun rootReader(v: Int): Node = rootReader(nodes[v])
 
-    private fun root(v : Int): Node = root(nodes[v])
+    fun root(v : Int): Node = root(nodes[v])
 
     fun node(u: Int): Node = nodes[u]
 

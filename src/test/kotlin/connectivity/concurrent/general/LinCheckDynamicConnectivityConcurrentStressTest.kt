@@ -19,7 +19,11 @@ enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size:
     ImprovedCoarseGrainedLockingDynamicConnectivity(::ImprovedCoarseGrainedLockingDynamicConnectivity),
     CoarseGrainedReadWriteLockingDynamicConnectivity(::CoarseGrainedReadWriteLockingDynamicConnectivity),
     FineGrainedLockingDynamicConnectivity(::FineGrainedLockingDynamicConnectivity),
-    SFineGrainedLockingDynamicConnectivity(::SFineGrainedLockingDynamicConnectivity)
+    SFineGrainedLockingDynamicConnectivity(::SFineGrainedLockingDynamicConnectivity),
+    CoarseGrainedReadWriteFairLockingDynamicConnectivity(::CoarseGrainedReadWriteFairLockingDynamicConnectivity),
+    FineGrainedFairLockingDynamicConnectivity(::FineGrainedFairLockingDynamicConnectivity),
+    FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
+    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity)
 }
 
 var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.CoarseGrainedLockingDynamicConnectivity
@@ -36,7 +40,7 @@ class ConcurrentDynamicConnectivityTest(private val dcp: ConcurrentGeneralDynami
         actorsAfter = 10,
         actorsBefore = 10,
         actorsPerThread = 8,
-        iterations = 10000,
+        iterations = 5000,
         generator = GeneralDynamicConnectivityExecutionGenerator::class,
         requireStateEquivalenceImplCheck = false
     )

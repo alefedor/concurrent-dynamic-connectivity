@@ -27,27 +27,27 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
     }
 
     private inline fun lockComponents(u: Int, v: Int, body: () -> Unit) {
-        lockComponent(min(u, v)) { // min/max not to get into deadlock
-            lockComponent(max(u, v)) {
-                body()
-            }
-        }
-    }
-
-    private inline fun lockComponent(u: Int, body: () -> Unit) {
         while (true) {
-            val root = connectivity.root(u)
-            root.lock!!.lock()
+            val uRoot = connectivity.root(u)
+            val vRoot = connectivity.root(v)
 
-            if (root == connectivity.root(u)) {
+            if (uRoot.priority < vRoot.priority) {
+                uRoot.lock!!.lock()
+                vRoot.lock!!.lock()
+            } else {
+                vRoot.lock!!.lock()
+                uRoot.lock!!.lock()
+            }
+
+            if (uRoot == connectivity.root(u) && vRoot == connectivity.root(v)) {
                 body()
-                root.lock.unlock()
+                uRoot.lock.unlock()
+                vRoot.lock.unlock()
                 break
             }
 
-            body()
-
-            root.lock.unlock()
+            uRoot.lock.unlock()
+            vRoot.lock.unlock()
         }
     }
 }

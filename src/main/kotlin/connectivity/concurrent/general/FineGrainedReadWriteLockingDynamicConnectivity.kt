@@ -27,52 +27,52 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
     }
 
     private inline fun lockComponentsRead(u: Int, v: Int, body: () -> Unit) {
-        lockComponentRead(min(u, v)) { // min/max not to get into deadlock
-            lockComponentRead(max(u, v)) {
-                body()
-            }
-        }
-    }
-
-    private inline fun lockComponentRead(u: Int, body: () -> Unit) {
         while (true) {
-            val root = connectivity.root(u)
-            root.lock!!.readLock().lock()
+            val uRoot = connectivity.root(u)
+            val vRoot = connectivity.root(v)
 
-            if (root == connectivity.root(u)) {
+            if (uRoot.priority < vRoot.priority) {
+                uRoot.lock!!.readLock().lock()
+                vRoot.lock!!.readLock().lock()
+            } else {
+                vRoot.lock!!.readLock().lock()
+                uRoot.lock!!.readLock().lock()
+            }
+
+            if (uRoot == connectivity.root(u) && vRoot == connectivity.root(v)) {
                 body()
-                root.lock.readLock().unlock()
+                uRoot.lock.readLock().unlock()
+                vRoot.lock.readLock().unlock()
                 break
             }
 
-            body()
-
-            root.lock.readLock().unlock()
+            uRoot.lock.readLock().unlock()
+            vRoot.lock.readLock().unlock()
         }
     }
 
     private inline fun lockComponentsWrite(u: Int, v: Int, body: () -> Unit) {
-        lockComponentWrite(min(u, v)) { // min/max not to get into deadlock
-            lockComponentWrite(max(u, v)) {
-                body()
-            }
-        }
-    }
-
-    private inline fun lockComponentWrite(u: Int, body: () -> Unit) {
         while (true) {
-            val root = connectivity.root(u)
-            root.lock!!.writeLock().lock()
+            val uRoot = connectivity.root(u)
+            val vRoot = connectivity.root(v)
 
-            if (root == connectivity.root(u)) {
+            if (uRoot.priority < vRoot.priority) {
+                uRoot.lock!!.writeLock().lock()
+                vRoot.lock!!.writeLock().lock()
+            } else {
+                vRoot.lock!!.writeLock().lock()
+                uRoot.lock!!.writeLock().lock()
+            }
+
+            if (uRoot == connectivity.root(u) && vRoot == connectivity.root(v)) {
                 body()
-                root.lock.writeLock().unlock()
+                uRoot.lock.writeLock().unlock()
+                vRoot.lock.writeLock().unlock()
                 break
             }
 
-            body()
-
-            root.lock.writeLock().unlock()
+            uRoot.lock.writeLock().unlock()
+            vRoot.lock.writeLock().unlock()
         }
     }
 }

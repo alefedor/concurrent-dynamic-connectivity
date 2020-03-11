@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
-const val n = 7
+const val n = 9
 
 enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
     CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
@@ -39,8 +39,8 @@ class ConcurrentDynamicConnectivityTest(private val dcp: ConcurrentGeneralDynami
     @StressCTest(
         actorsAfter = 10,
         actorsBefore = 10,
-        actorsPerThread = 8,
-        iterations = 5000,
+        actorsPerThread = 12,
+        iterations = 1000,
         generator = GeneralDynamicConnectivityExecutionGenerator::class,
         requireStateEquivalenceImplCheck = false
     )

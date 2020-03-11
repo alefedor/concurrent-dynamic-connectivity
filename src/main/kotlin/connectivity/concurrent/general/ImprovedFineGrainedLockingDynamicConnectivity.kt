@@ -175,21 +175,28 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
         return result
     }
 
-    private inline fun lockComponents(u: Int, v: Int, body: () -> Unit) {
-        lockComponent(min(u, v)) { // min/max not to get into deadlock
-            lockComponent(max(u, v)) {
-                body()
-            }
-        }
-    }
+    private inline fun lockComponents(a: Int, b: Int, body: () -> Unit) {
+        var u = a
+        var v = b
 
-    private inline fun lockComponent(u: Int, body: () -> Unit) {
         while (true) {
-            val root = levels[0].root(u)
-            synchronized(root) {
-                if (root == levels[0].root(u)) {
-                    body()
-                    return
+            var uRoot = levels[0].root(u)
+            var vRoot = levels[0].root(v)
+
+            if (uRoot.priority > vRoot.priority) {
+                val tmp = u
+                u = v
+                v = tmp
+                val tmpNode = uRoot
+                uRoot = vRoot
+                vRoot = tmpNode
+            }
+            synchronized(uRoot) {
+                synchronized(vRoot) {
+                    if (uRoot == levels[0].root(u) && vRoot == levels[0].root(v)) {
+                        body()
+                        return
+                    }
                 }
             }
         }

@@ -11,7 +11,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
     var left: Node? = null
     var right: Node? = null
     var size: Int = 1
-    val nonTreeEdges: MutableSet<Pair<Int, Int>> = if (isVertex) HashSet() else Collections.emptySet() // for storing non-tree edges in general case
+    val nonTreeEdges: MutableSet<Pair<Int, Int>> = if (isVertex) mutableSetOf() else Collections.emptySet() // for storing non-tree edges in general case
     @Volatile
     var hasNonTreeEdges: Boolean = false // for traversal
     @Volatile

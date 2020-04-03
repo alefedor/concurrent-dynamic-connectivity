@@ -8,7 +8,7 @@ enum class DCPConstructor(val construct: (Int) -> DynamicConnectivity) {
     //ImprovedCoarseGrainedLockingDCP(::ImprovedCoarseGrainedLockingDynamicConnectivity),
     //CoarseGrainedReadWriteLockingDCP(::CoarseGrainedReadWriteLockingDynamicConnectivity),
     //FineGrainedLockingDCP(::FineGrainedLockingDynamicConnectivity),
-    SFineGrainedLockElisionLockingDCP(::SFineGrainedLockingDynamicConnectivity),
+    //SFineGrainedLockingDCP(::SFineGrainedLockingDynamicConnectivity),
     //CoarseGrainedReadWriteFairLockingDynamicConnectivity(::CoarseGrainedReadWriteFairLockingDynamicConnectivity),
     //FineGrainedFairLockingDynamicConnectivity(::FineGrainedFairLockingDynamicConnectivity),
     //FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),

@@ -1,7 +1,6 @@
 package connectivity.concurrent.general.major
 
 import connectivity.sequential.general.DynamicConnectivity
-import java.lang.IllegalStateException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
@@ -23,6 +22,9 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     }
 
     override fun addEdge(u: Int, v: Int) {
+        val edge = Pair(min(u, v), max(u, v))
+        ranks[edge] = 0
+        statuses[edge] = AtomicReference(EdgeStatus.INITIAL)
         while (true) {
             //if (!connected(u, v)) {
                 lockComponents(u, v) {
@@ -31,14 +33,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 }
             //} else {
             //    if (tryNonBlockingAddEdge(u, v))
-            //        return;
+            //        return
             //}
         }
     }
 
     fun doAddEdge(u: Int, v: Int) { // under lock
         val edge = Pair(min(u, v), max(u, v))
-        ranks[edge] = 0
         if (!levels[0].connectedSimple(u, v)) {
             levels[0].addEdge(u, v)
         } else {
@@ -49,11 +50,29 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 nonTreeEdges!!.push(edge)
             }
         }
-        statuses[edge] = AtomicReference(EdgeStatus.TREE_EDGE)
+        statuses[edge]!!.set(EdgeStatus.TREE_EDGE)
     }
 
     fun tryNonBlockingAddEdge(u: Int, v: Int): Boolean {
-        TODO()
+        val edge = Pair(min(u, v), max(u, v))
+        val level = levels[0]
+        level.node(u).update {
+            nonTreeEdges!!.push(edge)
+        }
+        level.node(v).update {
+            nonTreeEdges!!.push(edge)
+        }
+        statuses[edge]!!.set(EdgeStatus.READY_TO_ADD) // only one thread can change the INITIAL status
+        val removeEdgeOperation = level.root(u).removeEdgeOperation
+        if (removeEdgeOperation != null) {
+            if (!level.connectedSimple(removeEdgeOperation.u, removeEdgeOperation.v, removeEdgeOperation.lowerRoot)) {
+                if (removeEdgeOperation.replacement.compareAndSet(null, edge))
+                    return true
+            }
+        }
+        if (connected(u, v) && statuses[edge]!!.compareAndSet(EdgeStatus.READY_TO_ADD, EdgeStatus.NON_TREE_EDGE))
+            return true
+        return false
     }
 
     override fun removeEdge(u: Int, v: Int) {
@@ -63,10 +82,12 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             if (status == EdgeStatus.TREE_EDGE) {
                 lockComponents(u, v) {
                     doRemoveEdge(u, v)
+                    return
                 }
             } else {
                 require(status == EdgeStatus.NON_TREE_EDGE) // can remove edge
-                statuses[edge]!!.compareAndSet(EdgeStatus.NON_TREE_EDGE, EdgeStatus.REMOVED)
+                if (statuses[edge]!!.compareAndSet(EdgeStatus.NON_TREE_EDGE, EdgeStatus.REMOVED))
+                    return
             }
         }
 

@@ -20,6 +20,8 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
     var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != null
     @Volatile
     var version = 0
+    @Volatile
+    var removeEdgeOperation: RemovalOperationInfo? = null
 }
 
 class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {

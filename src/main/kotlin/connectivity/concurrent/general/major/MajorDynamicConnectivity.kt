@@ -111,8 +111,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
 
             // promote tree edges for less component
 
-            levels[r].lowerRoot = lowerRoot
-
             increaseTreeEdgesRank(uRoot, u, v, r)
             val replacementEdge = findReplacement(uRoot, r, lowerRoot)
             if (replacementEdge != null) {
@@ -124,9 +122,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                         if (ur.parent != null) ur else vr
                     }
 
-                    levels[i].whileStillInSame(lr) {
-                        levels[i].addEdge(replacementEdge.first, replacementEdge.second, i == r)
-                    }
+                    levels[i].addEdge(replacementEdge.first, replacementEdge.second, i == r, lr)
                 }
                 break
             } else {
@@ -136,7 +132,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 uRoot.version.inc()
                 vRoot.version.inc()
             }
-            levels[r].lowerRoot = null
         }
     }
 
@@ -164,7 +159,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         node.recalculate()
     }
 
-    private fun findReplacement(node: Node, rank: Int, lowerRoot: Node): Pair<Int, Int>? {
+    private fun findReplacement(node: Node, rank: Int, additionalRoot: Node): Pair<Int, Int>? {
         if (!node.hasNonTreeEdges) return null
 
         val iterator = node.nonTreeEdges.iterator()
@@ -184,29 +179,29 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 }
             iterator.remove()
 
-            if (!levels[rank].connectedSimple(edge.first, edge.second, lowerRoot)) {
+            if (!levels[rank].connectedSimple(edge.first, edge.second, additionalRoot)) {
                 // is replacement
                 result = edge
                 break
             } else {
                 // promote non-tree edge
                 levels[rank + 1].node(edge.first).update {
-                    nonTreeEdges.push(edge)
+                    nonTreeEdges!!.push(edge)
                 }
                 levels[rank + 1].node(edge.second).update {
-                    nonTreeEdges.push(edge)
+                    nonTreeEdges!!.push(edge)
                 }
                 statuses[edge] = rank + 1
             }
         }
 
         if (result == null) {
-            val leftResult = node.left?.let { findReplacement(it, rank, lowerRoot) }
+            val leftResult = node.left?.let { findReplacement(it, rank, additionalRoot) }
             if (leftResult != null)
                 result = leftResult
         }
         if (result == null) {
-            val rightResult = node.right?.let { findReplacement(it, rank, lowerRoot) }
+            val rightResult = node.right?.let { findReplacement(it, rank, additionalRoot) }
             if (rightResult != null)
                 result = rightResult
         }

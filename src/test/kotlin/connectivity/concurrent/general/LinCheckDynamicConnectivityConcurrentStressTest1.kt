@@ -1,6 +1,7 @@
 package connectivity.concurrent.general
 
 import connectivity.concurrent.GeneralDynamicConnectivityExecutionGenerator
+import connectivity.concurrent.general.major.MajorDynamicConnectivity
 import connectivity.sequential.general.DynamicConnectivity
 import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
@@ -12,7 +13,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
-const val n = 9
+const val n1 = 7
+const val n2 = 9
+const val n3 = 11
+
 
 enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
     CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
@@ -23,7 +27,8 @@ enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size:
     CoarseGrainedReadWriteFairLockingDynamicConnectivity(::CoarseGrainedReadWriteFairLockingDynamicConnectivity),
     FineGrainedFairLockingDynamicConnectivity(::FineGrainedFairLockingDynamicConnectivity),
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
-    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity)
+    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),
+    MajorDynamicConnectivity(::MajorDynamicConnectivity)
 }
 
 var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.CoarseGrainedLockingDynamicConnectivity
@@ -44,10 +49,65 @@ class ConcurrentDynamicConnectivityTest(private val dcp: ConcurrentGeneralDynami
         generator = GeneralDynamicConnectivityExecutionGenerator::class,
         requireStateEquivalenceImplCheck = false
     )
-    @Param(name = "a", gen = IntGen::class, conf = "0:${n - 1}")
+    @Param(name = "a", gen = IntGen::class, conf = "0:${n1 - 1}")
     @OpGroupConfig(name = "writer", nonParallel = true)
-    class LinCheckDynamicConnectivityConcurrentStressTest {
-        private val dc = globalDcpConstructor.construct(n)
+    class LinCheckDynamicConnectivityConcurrentStressTest1 {
+        private val dc = globalDcpConstructor.construct(n1)
+
+        @Operation(group = "writer")
+        fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
+            dc.addEdge(a, b)
+        }
+
+        @Operation(group = "writer")
+        fun removeEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
+            dc.removeEdge(a, b)
+        }
+
+        @Operation
+        fun connected(@Param(name = "a") a: Int, @Param(name = "a") b: Int) = dc.connected(a, b)
+    }
+
+    // copy-paste because of compile-time constants
+    @StressCTest(
+        actorsAfter = 10,
+        actorsBefore = 10,
+        actorsPerThread = 12,
+        iterations = 1000,
+        generator = GeneralDynamicConnectivityExecutionGenerator::class,
+        requireStateEquivalenceImplCheck = false
+    )
+    @Param(name = "a", gen = IntGen::class, conf = "0:${n2 - 1}")
+    @OpGroupConfig(name = "writer", nonParallel = true)
+    class LinCheckDynamicConnectivityConcurrentStressTest2 {
+        private val dc = globalDcpConstructor.construct(n2)
+
+        @Operation(group = "writer")
+        fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
+            dc.addEdge(a, b)
+        }
+
+        @Operation(group = "writer")
+        fun removeEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
+            dc.removeEdge(a, b)
+        }
+
+        @Operation
+        fun connected(@Param(name = "a") a: Int, @Param(name = "a") b: Int) = dc.connected(a, b)
+    }
+
+    @StressCTest(
+        actorsAfter = 10,
+        actorsBefore = 10,
+        actorsPerThread = 12,
+        iterations = 1000,
+        generator = GeneralDynamicConnectivityExecutionGenerator::class,
+        requireStateEquivalenceImplCheck = false
+    )
+    @Param(name = "a", gen = IntGen::class, conf = "0:${n3 - 1}")
+    @OpGroupConfig(name = "writer", nonParallel = true)
+    class LinCheckDynamicConnectivityConcurrentStressTest3 {
+        private val dc = globalDcpConstructor.construct(n3)
 
         @Operation(group = "writer")
         fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
@@ -70,7 +130,17 @@ class ConcurrentDynamicConnectivityTest(private val dcp: ConcurrentGeneralDynami
     }
 
     @Test
-    fun test() {
-        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest::class.java)
+    fun test1() {
+        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest1::class.java)
+    }
+
+    @Test
+    fun test2() {
+        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest2::class.java)
+    }
+
+    @Test
+    fun test3() {
+        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest3::class.java)
     }
 }

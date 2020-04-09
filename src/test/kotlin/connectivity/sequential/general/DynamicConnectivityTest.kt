@@ -1,6 +1,7 @@
 package connectivity.sequential.general
 
 import connectivity.concurrent.general.*
+import connectivity.concurrent.general.major.MajorDynamicConnectivity
 import connectivity.sequential.DynamicConnectivityScenarioGenerator
 import connectivity.sequential.OperationType
 import connectivity.sequential.ScenarioType
@@ -20,16 +21,29 @@ enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> D
     CoarseGrainedReadWriteFairLockingDynamicConnectivity(::CoarseGrainedReadWriteFairLockingDynamicConnectivity),
     FineGrainedFairLockingDynamicConnectivity(::FineGrainedFairLockingDynamicConnectivity),
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
-    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity)
+    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),
+    MajorDynamicConnectivity(::MajorDynamicConnectivity)
 }
 
 @RunWith(Parameterized::class)
 class DynamicConnectivityTest(private val dcp: GeneralDynamicConnectivityConstructor) {
     @Test
-    fun stress() {
+    fun stress8() {
         val iterations = 1000000
-        val nodes = 8
+        val nodes = 7
         val scenarioSize = 25
+        stress(iterations, nodes, scenarioSize)
+    }
+
+    @Test
+    fun stress10() {
+        val iterations = 200000
+        val nodes = 10
+        val scenarioSize = 30
+        stress(iterations, nodes, scenarioSize)
+    }
+
+    fun stress(iterations: Int, nodes: Int, scenarioSize: Int) {
         val scenarioGenerator = DynamicConnectivityScenarioGenerator(ScenarioType.GENERAL_CONNECTIVITY)
 
         repeat(iterations) {

@@ -1,6 +1,7 @@
 package connectivity.concurrent.general.major
 
 import connectivity.sequential.general.DynamicConnectivity
+import java.lang.IllegalStateException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
@@ -94,8 +95,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     }
 
     private fun doRemoveEdge(u: Int, v: Int) {
-        val edge = Pair(u, v)
-        val rank = ranks[edge] ?: return
+        val edge = Pair(min(u, v), max(u, v))
+        val rank = ranks[edge] ?: throw IllegalStateException()
         ranks.remove(edge)
 
         for (r in rank downTo 0) {
@@ -213,7 +214,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         nonTreeEdges?.let {
             while (true) {
                 val edge = nonTreeEdges.pop() ?: break
-                if (ranks[edge]!! != rank) continue // check that rank is correct, because we do not delete twin edges
+                val edgeRank = ranks[edge] ?: continue // skip already deleted edges
+                if (edgeRank != rank) continue // check that rank is correct, because we do not delete twin edges
                 if (statuses[edge]!!.get() != EdgeStatus.NON_TREE_EDGE) continue // just remove deleted edges and continue
 
                 if (!levels[rank].connectedSimple(edge.first, edge.second, additionalRoot)) {
@@ -257,7 +259,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         nonTreeEdges?.let {
             mainLoop@while (true) {
                 val edge = nonTreeEdges.pop() ?: break
-                if (ranks[edge]!! != 0) continue // check that rank is correct, because we do not delete twin edges
+                val edgeRank = ranks[edge] ?: continue // skip already deleted edges
+                if (edgeRank != 0) continue // check that rank is correct, because we do not delete twin edges
                 when (statuses[edge]!!.get()) {
                     EdgeStatus.INITIAL -> continue@mainLoop // just skip
                     EdgeStatus.READY_TO_ADD -> {

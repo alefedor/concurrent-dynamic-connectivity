@@ -1,16 +1,16 @@
 package connectivity.concurrent.general.major
 
 import connectivity.sequential.general.DynamicConnectivity
+import org.cliffc.high_scale_lib.NonBlockingHashMap
 import java.lang.IllegalStateException
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
 import kotlin.math.min
 
 class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<MajorConcurrentEulerTourTree>
-    private val statuses = ConcurrentHashMap<Pair<Int, Int>, AtomicReference<EdgeStatus>>()
-    private val ranks = ConcurrentHashMap<Pair<Int, Int>, Int>()
+    private val statuses = NonBlockingHashMap<Pair<Int, Int>, AtomicReference<EdgeStatus>>()
+    private val ranks = NonBlockingHashMap<Pair<Int, Int>, Int>()
 
     init {
         var levelNumber = 1

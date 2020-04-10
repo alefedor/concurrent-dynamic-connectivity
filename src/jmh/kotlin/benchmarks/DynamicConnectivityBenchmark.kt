@@ -35,7 +35,7 @@ open class DynamicConnectivityBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = ScenarioGenerator.generate(graph, workers, 10000000 / workers, 1, 1)
+        scenario = ScenarioGenerator().generate(graph, workers, 10000000 / workers, 1, 1)
     }
 
     @Setup(Level.Invocation)
@@ -75,7 +75,7 @@ open class DynamicConnectivityBenchmarkMoreReads {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = ScenarioGenerator.generate(graph, workers, 10000000 / workers, 1, 5)
+        scenario = ScenarioGenerator().generate(graph, workers, 10000000 / workers, 1, 5)
     }
 
     @Setup(Level.Invocation)
@@ -115,7 +115,7 @@ open class DynamicConnectivityBenchmarkMoreMoreReads {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = ScenarioGenerator.generate(graph, workers, 10000000 / workers, 1, 25)
+        scenario = ScenarioGenerator().generate(graph, workers, 10000000 / workers, 1, 25)
     }
 
     @Setup(Level.Invocation)

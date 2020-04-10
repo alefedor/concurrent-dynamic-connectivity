@@ -14,7 +14,7 @@ import java.util.*
 import kotlin.math.max
 
 
-abstract class DynamicConnectivityExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure, scenarioType: ScenarioType) :
+abstract class DynamicConnectivitySingleWriterExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure, scenarioType: ScenarioType) :
     ExecutionGenerator(testConfiguration, testStructure) {
     private val n: Int
     private val addEdgeMethod: Method
@@ -29,7 +29,7 @@ abstract class DynamicConnectivityExecutionGenerator(testConfiguration: CTestCon
         repeat(iterations) {
             m = max(m, testStructure.actorGenerators[0].generate().arguments.map { Integer::class.java.cast(it).toInt() }.max()!!)
         }
-        n = m
+        n = m + 1
 
         addEdgeMethod = testStructure.actorGenerators.first {  it.generate().method.name == "addEdge" }.generate().method
         removeEdgeMethod = testStructure.actorGenerators.first {  it.generate().method.name == "removeEdge" }.generate().method
@@ -66,8 +66,8 @@ abstract class DynamicConnectivityExecutionGenerator(testConfiguration: CTestCon
     private fun connectedActor(u: Int, v: Int) = Actor(connectedMethod, listOf(u, v), emptyList())
 }
 
-class TreeDynamicConnectivityExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure) :
-    DynamicConnectivityExecutionGenerator(testConfiguration, testStructure, ScenarioType.TREE_CONNECTIVITY)
+class TreeDynamicConnectivitySingleWriterExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure) :
+    DynamicConnectivitySingleWriterExecutionGenerator(testConfiguration, testStructure, ScenarioType.TREE_CONNECTIVITY)
 
-class GeneralDynamicConnectivityExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure) :
-    DynamicConnectivityExecutionGenerator(testConfiguration, testStructure, ScenarioType.GENERAL_CONNECTIVITY)
+class GeneralDynamicConnectivitySingleWriterExecutionGenerator(testConfiguration: CTestConfiguration, testStructure: CTestStructure) :
+    DynamicConnectivitySingleWriterExecutionGenerator(testConfiguration, testStructure, ScenarioType.GENERAL_CONNECTIVITY)

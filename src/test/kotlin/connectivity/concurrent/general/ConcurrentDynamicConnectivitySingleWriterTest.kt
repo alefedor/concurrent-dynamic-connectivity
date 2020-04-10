@@ -1,8 +1,6 @@
 package connectivity.concurrent.general
 
-import connectivity.concurrent.GeneralDynamicConnectivityExecutionGenerator
-import connectivity.concurrent.general.major.MajorDynamicConnectivity
-import connectivity.sequential.general.DynamicConnectivity
+import connectivity.concurrent.GeneralDynamicConnectivitySingleWriterExecutionGenerator
 import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
 import org.jetbrains.kotlinx.lincheck.annotations.Operation
@@ -13,29 +11,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
-const val n1 = 7
-const val n2 = 9
-const val n3 = 11
-
-
-enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
-    CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
-    ImprovedCoarseGrainedLockingDynamicConnectivity(::ImprovedCoarseGrainedLockingDynamicConnectivity),
-    CoarseGrainedReadWriteLockingDynamicConnectivity(::CoarseGrainedReadWriteLockingDynamicConnectivity),
-    FineGrainedLockingDynamicConnectivity(::FineGrainedLockingDynamicConnectivity),
-    SFineGrainedLockingDynamicConnectivity(::SFineGrainedLockingDynamicConnectivity),
-    CoarseGrainedReadWriteFairLockingDynamicConnectivity(::CoarseGrainedReadWriteFairLockingDynamicConnectivity),
-    FineGrainedFairLockingDynamicConnectivity(::FineGrainedFairLockingDynamicConnectivity),
-    FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
-    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),
-    MajorDynamicConnectivity(::MajorDynamicConnectivity)
-}
-
-var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.CoarseGrainedLockingDynamicConnectivity
-
+private const val n1 = 7
+private const val n2 = 9
+private const val n3 = 11
 
 @RunWith(Parameterized::class)
-class ConcurrentDynamicConnectivityTest(private val dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
+class ConcurrentDynamicConnectivitySingleWriterTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
 
     init {
         globalDcpConstructor = dcp
@@ -46,7 +27,7 @@ class ConcurrentDynamicConnectivityTest(private val dcp: ConcurrentGeneralDynami
         actorsBefore = 10,
         actorsPerThread = 12,
         iterations = 1000,
-        generator = GeneralDynamicConnectivityExecutionGenerator::class,
+        generator = GeneralDynamicConnectivitySingleWriterExecutionGenerator::class,
         requireStateEquivalenceImplCheck = false
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n1 - 1}")
@@ -74,7 +55,7 @@ class ConcurrentDynamicConnectivityTest(private val dcp: ConcurrentGeneralDynami
         actorsBefore = 10,
         actorsPerThread = 12,
         iterations = 1000,
-        generator = GeneralDynamicConnectivityExecutionGenerator::class,
+        generator = GeneralDynamicConnectivitySingleWriterExecutionGenerator::class,
         requireStateEquivalenceImplCheck = false
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n2 - 1}")
@@ -101,7 +82,7 @@ class ConcurrentDynamicConnectivityTest(private val dcp: ConcurrentGeneralDynami
         actorsBefore = 10,
         actorsPerThread = 12,
         iterations = 1000,
-        generator = GeneralDynamicConnectivityExecutionGenerator::class,
+        generator = GeneralDynamicConnectivitySingleWriterExecutionGenerator::class,
         requireStateEquivalenceImplCheck = false
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n3 - 1}")

@@ -20,21 +20,28 @@ inline fun Long.type(): QueryType = when (this shr 48) {
 
 inline fun Long.edgeToQuery(type: QueryType) = this or ((1L shl 48) * type.id)
 
-object ScenarioGenerator {
+class ScenarioGenerator {
+    private val rnd = Random(343)
+
     fun generate(graph: Graph, threads: Int, sizePerThread: Int, updateWeight: Int, readWeight: Int): Scenario {
-        val rnd = Random(343)
         val initialEdgesNumber = graph.edges.size / 2
         val initialEdges = graph.edges.copyOfRange(0, initialEdgesNumber)
 
         val edgesPerThread = initialEdgesNumber / threads
 
         val queries = Array(threads) {thread ->
-            val candidatesToAdd: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[thread * edgesPerThread + it] }
-            val candidatesToRemove: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[initialEdgesNumber + thread * edgesPerThread + it] }
+            val candidatesToAdd: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[initialEdgesNumber + thread * edgesPerThread + it] }
+            val candidatesToRemove: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[thread * edgesPerThread + it] }
 
             LongArray(sizePerThread) {
-                val type =
-                    randomQueryType(updateWeight, readWeight, rnd)
+                var type: QueryType
+
+                while (true) {
+                    type = randomQueryType(updateWeight, readWeight)
+                    if (type == QueryType.ADD_EDGE && candidatesToAdd.isEmpty()) continue
+                    if (type == QueryType.REMOVE_EDGE && candidatesToRemove.isEmpty()) continue
+                    break
+                }
 
                 when (type) {
                     QueryType.CONNECTED -> {
@@ -58,7 +65,7 @@ object ScenarioGenerator {
         return Scenario(graph.nodes, threads, initialEdges, queries)
     }
 
-    private fun randomQueryType(updateWeight: Int, readWeight: Int, rnd: Random): QueryType {
+    private fun randomQueryType(updateWeight: Int, readWeight: Int): QueryType {
         val r = (0 until (updateWeight + readWeight)).random(rnd)
         return if (r < readWeight) {
             QueryType.CONNECTED

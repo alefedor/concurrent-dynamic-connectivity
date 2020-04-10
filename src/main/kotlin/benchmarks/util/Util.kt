@@ -30,6 +30,7 @@ fun randomGraph(nodes: Int, edges: Int): Graph {
                 )) continue
             edgesList.add(bidirectionalEdge(first, second))
             presentEdges.add(bidirectionalEdge(first, second))
+            presentEdges.add(bidirectionalEdge(second, first))
             break
         }
     }

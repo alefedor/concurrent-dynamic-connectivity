@@ -156,6 +156,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 increaseTreeEdgesRank(uRoot, u, v, r)
                 val replacementEdge = findReplacement(uRoot, r, lowerRoot)
                 if (replacementEdge != null) {
+                    statuses[replacementEdge]!!.set(EdgeStatus.TREE_EDGE)
                     for (i in r downTo 0) {
                         val lr = if (i == r) {
                             lowerRoot
@@ -276,8 +277,22 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 // is a non tree edge here
                 if (!levels[0].connectedSimple(edge.first, edge.second, additionalRoot)) {
                     // is replacement
-                    currentOperationInfo.replacement.compareAndSet(null, edge)
-                    foundReplacement = true
+                    if (statuses[edge]!!.compareAndSet(EdgeStatus.NON_TREE_EDGE, EdgeStatus.TREE_EDGE)) {
+                        if (currentOperationInfo.replacement.compareAndSet(null, edge)) {
+                            // success
+                        } else {
+                            // an awkward situation.
+                            // found a replacement edge, made it tree, but somebody found an another one.
+                            // because the transition from TREE_EDGE to NON_TREE_EDGE is not allowed, we should use
+                            // our edge as a replacement and handle another edge
+                            val anotherEdge = currentOperationInfo.replacement.get()
+                            statuses[anotherEdge]!!.set(EdgeStatus.NON_TREE_EDGE) // now it is a regular non-tree edge
+                            currentOperationInfo.replacement.set(edge)
+                        }
+
+                        foundReplacement = true
+                    }
+
                     break
                 } else {
                     // promote non-tree edge

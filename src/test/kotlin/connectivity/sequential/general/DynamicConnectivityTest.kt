@@ -28,7 +28,7 @@ enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> D
 @RunWith(Parameterized::class)
 class DynamicConnectivityTest(private val dcp: GeneralDynamicConnectivityConstructor) {
     @Test
-    fun stress8() {
+    fun stress7() {
         val iterations = 1000000
         val nodes = 7
         val scenarioSize = 25
@@ -36,12 +36,21 @@ class DynamicConnectivityTest(private val dcp: GeneralDynamicConnectivityConstru
     }
 
     @Test
-    fun stress10() {
+    fun stress9() {
         val iterations = 200000
-        val nodes = 10
+        val nodes = 9
         val scenarioSize = 30
         stress(iterations, nodes, scenarioSize)
     }
+
+    @Test
+    fun stress11() {
+        val iterations = 200000
+        val nodes = 11
+        val scenarioSize = 30
+        stress(iterations, nodes, scenarioSize)
+    }
+
 
     fun stress(iterations: Int, nodes: Int, scenarioSize: Int) {
         val scenarioGenerator = DynamicConnectivityScenarioGenerator(ScenarioType.GENERAL_CONNECTIVITY)

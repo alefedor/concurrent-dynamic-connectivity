@@ -1,5 +1,6 @@
 package connectivity.sequential.tree
 
+import connectivity.concurrent.general.major.MajorConcurrentEulerTourTree
 import connectivity.concurrent.tree.ConcurrentEulerTourTree
 import connectivity.sequential.OperationType
 import connectivity.sequential.SlowConnectivity
@@ -12,7 +13,8 @@ import org.junit.runners.Parameterized
 
 enum class TreeDynamicConnectivityConstructor(val construct: (size: Int) -> TreeDynamicConnectivity) {
     SequentialEulerTourTree(::SequentialEulerTourTree),
-    ConcurrentEulerTourTree(::ConcurrentEulerTourTree)
+    ConcurrentEulerTourTree(::ConcurrentEulerTourTree),
+    MajorConcurrentEulerTourTree(::MajorConcurrentEulerTourTree)
 }
 
 @RunWith(Parameterized::class)

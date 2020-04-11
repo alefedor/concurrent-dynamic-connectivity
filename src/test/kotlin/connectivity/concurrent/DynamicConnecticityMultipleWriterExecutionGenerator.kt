@@ -46,7 +46,7 @@ class GeneralDynamicConnectivityMultipleWriterExecutionGenerator(testConfigurati
             QueryType.CONNECTED -> connectedActor(op.to(), op.from())
         }
 
-        val graph = randomGraph(n, 2 * n)
+        val graph = randomGraph(n, 2 * n) // TODO: pass rnd here
 
         val scenario = scenarioGenerator.generate(graph, threads, actorsPerThread, 1, 1)
 

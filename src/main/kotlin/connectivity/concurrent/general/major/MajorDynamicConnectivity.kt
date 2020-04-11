@@ -132,6 +132,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     result
                 }
                 if (replacementEdge != null) {
+                    statuses[replacementEdge]!!.set(EdgeStatus.TREE_EDGE)
                     for (i in r downTo 0) {
                         val lr = if (i == r) {
                             lowerRoot

@@ -79,12 +79,6 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 
     fun removeEdge(u: Int, v: Int, doSplit: Boolean): Pair<Node, Node> {
-        try {
-
-            val edgeNode = edgeToNode[Pair(u, v)]!!
-        } catch(e: Exception) {
-            println("fdgdf")
-        }
         val edgeNode = edgeToNode[Pair(u, v)]!!
         val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
         var leftPosition = edgeNode.position()
@@ -117,7 +111,11 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         edgeToNode.remove(Pair(u, v))
         edgeToNode.remove(Pair(v, u))
 
-        return Pair(component1!!, component2!!)
+        try {
+            return Pair(component1!!, component2!!)
+        } catch(e: Exception) {
+            TODO()
+        }
     }
 
     override fun connected(u: Int, v: Int): Boolean {
@@ -252,4 +250,14 @@ internal fun Node.recalculateUp() {
 internal fun Node.update(body: Node.() -> Unit) {
     body()
     recalculateUp()
+}
+
+internal fun Node.recalculateUpNonTreeEdges() {
+    hasNonTreeEdges = true
+    parent?.recalculateUpNonTreeEdges()
+}
+
+internal fun Node.updateNonTreeEdges(body: Node.() -> Unit) {
+    body()
+    recalculateUpNonTreeEdges()
 }

@@ -33,7 +33,7 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
     @StressCTest(
         actorsAfter = 2 * n1,
         actorsBefore = n1,
-        actorsPerThread = 1,
+        actorsPerThread = 7,
         iterations = 400,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,

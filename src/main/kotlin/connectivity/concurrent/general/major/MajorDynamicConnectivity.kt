@@ -36,6 +36,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 }
             } else {
                 //println("non-blocking add")
+                println("non-tree $u $v")
                 if (tryNonBlockingAddEdge(u, v))
                     return
             }
@@ -46,12 +47,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         val edge = Pair(min(u, v), max(u, v))
         if (!levels[0].connectedSimple(u, v)) {
             levels[0].addEdge(u, v)
+            println("tree edge $u $v")
             statuses[edge]!!.set(EdgeStatus.TREE_EDGE)
         } else {
-            levels[0].node(u).update {
+            levels[0].node(u).updateNonTreeEdges {
                 nonTreeEdges!!.push(edge)
             }
-            levels[0].node(v).update {
+            levels[0].node(v).updateNonTreeEdges {
                 nonTreeEdges!!.push(edge)
             }
             statuses[edge]!!.set(EdgeStatus.NON_TREE_EDGE)
@@ -63,10 +65,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         val status = statuses[edge]!!
         //println(status.get())
         val level = levels[0]
-        level.node(u).update {
+        level.node(u).updateNonTreeEdges {
             nonTreeEdges!!.push(edge)
         }
-        level.node(v).update {
+        level.node(v).updateNonTreeEdges {
             nonTreeEdges!!.push(edge)
         }
         val root = level.root(u)
@@ -77,15 +79,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         else
             //println("parallel remove edge operation")*/
         if (removeEdgeOperation != null) {
-            if (!level.connectedSimple(removeEdgeOperation.u, removeEdgeOperation.v, removeEdgeOperation.additionalRoot)) {
+            if (level.connectedSimple(u, v) && !level.connectedSimple(u, v, removeEdgeOperation.additionalRoot)) {
                 // can be a replacement
                 //println("can be a replacement")
                 if (status.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.FAILED)) {
                     // self fail so that no one could add
                     if (removeEdgeOperation.replacement.compareAndSet(null, edge)) {
-                        // this cas may be needed only for current thread, so that it could not try to delete the edge
-                        // with FAILED status
-                        status.compareAndSet(EdgeStatus.FAILED, EdgeStatus.TREE_EDGE)
+                        //println("concurrent add found a replacement edge")
                         return true
                     }
                     //println("here")
@@ -116,8 +116,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     return
                 }
             } else {
+                if (status == EdgeStatus.FAILED) continue // active wait until the edge becomes TREE_EDGE
                 //println("non-blocking remove")
-                println(status)
                 require(status == EdgeStatus.NON_TREE_EDGE) // can remove edge
                 if (statuses[edge]!!.compareAndSet(EdgeStatus.NON_TREE_EDGE, EdgeStatus.REMOVED))
                     return
@@ -267,10 +267,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     break
                 } else {
                     // promote non-tree edge
-                    levels[rank + 1].node(edge.first).update {
+                    levels[rank + 1].node(edge.first).updateNonTreeEdges {
                         this.nonTreeEdges!!.push(edge)
                     }
-                    levels[rank + 1].node(edge.second).update {
+                    levels[rank + 1].node(edge.second).updateNonTreeEdges {
                         this.nonTreeEdges!!.push(edge)
                     }
                     ranks[edge] = rank + 1
@@ -312,11 +312,11 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                         val (u, v) = edge
                         if (levels[0].connectedSimple(u, v)) {
                             if (levels[0].node(u) == node)
-                                levels[0].node(v).update {
+                                levels[0].node(v).updateNonTreeEdges {
                                     nonTreeEdges!!.push(edge)
                                 }
                             else
-                                levels[0].node(u).update {
+                                levels[0].node(u).updateNonTreeEdges {
                                     nonTreeEdges!!.push(edge)
                                 }
                             statuses[edge]!!.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.NON_TREE_EDGE)
@@ -342,7 +342,9 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     if (statuses[edge]!!.compareAndSet(EdgeStatus.NON_TREE_EDGE, EdgeStatus.TREE_EDGE)) {
                         if (currentOperationInfo.replacement.compareAndSet(null, edge)) {
                             // success
+                            //println("remove found a replacement edge")
                         } else {
+                            println("awkward situation")
                             // an awkward situation.
                             // found a replacement edge, made it tree, but somebody found an another one.
                             // because the transition from TREE_EDGE to NON_TREE_EDGE is not allowed, we should use
@@ -353,15 +355,16 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                         }
 
                         foundReplacement = true
+                        break
+                    } else {
+                        // the edge was deleted
                     }
-
-                    break
                 } else {
                     // promote non-tree edge
-                    levels[1].node(edge.first).update {
+                    levels[1].node(edge.first).updateNonTreeEdges {
                         this.nonTreeEdges!!.push(edge)
                     }
-                    levels[1].node(edge.second).update {
+                    levels[1].node(edge.second).updateNonTreeEdges {
                         this.nonTreeEdges!!.push(edge)
                     }
                     ranks[edge] = 1

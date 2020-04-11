@@ -5,13 +5,15 @@ import connectivity.concurrent.tree.Node
 import connectivity.concurrent.tree.recalculate
 import connectivity.concurrent.tree.update
 import connectivity.sequential.general.DynamicConnectivity
+import org.cliffc.high_scale_lib.NonBlockingHashMap
+import java.lang.IllegalStateException
 import kotlin.collections.HashMap
 import kotlin.math.max
 import kotlin.math.min
 
 class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<ConcurrentEulerTourTree>
-    private val ranks = HashMap<Pair<Int, Int>, Int>()
+    private val ranks = NonBlockingHashMap<Pair<Int, Int>, Int>()
 
     init {
         var levelNumber = 1
@@ -43,7 +45,7 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
     override fun removeEdge(u: Int, v: Int) {
         lockComponents(u, v) {
             val edge = Pair(min(u, v), max(u, v))
-            val rank = ranks[edge] ?: return
+            val rank = ranks[edge] ?: throw IllegalStateException()
             ranks.remove(edge)
             val level = levels[rank]
             val isNonTreeEdge = level.node(u).nonTreeEdges.contains(edge)

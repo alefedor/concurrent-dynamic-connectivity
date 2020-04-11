@@ -1,6 +1,7 @@
 package connectivity.concurrent.general
 
 import connectivity.concurrent.GeneralDynamicConnectivityMultipleWriterExecutionGenerator
+import connectivity.sequential.SlowConnectivity
 import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
 import org.jetbrains.kotlinx.lincheck.annotations.Operation
@@ -22,14 +23,22 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
         globalDcpConstructor = dcp
     }
 
+    class SequentialSpecification() {
+        val slowConnectivity = SlowConnectivity(9)
+        fun addEdge(u: Int, v: Int) = slowConnectivity.addEdge(u, v)
+        fun removeEdge(u: Int, v: Int) = slowConnectivity.removeEdge(u, v)
+        fun connected(u: Int, v: Int) = slowConnectivity.sameComponent(u, v)
+    }
+
     @StressCTest(
         actorsAfter = 2 * n1,
         actorsBefore = n1,
         actorsPerThread = 1,
-        iterations = 200,
+        iterations = 400,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
-        requireStateEquivalenceImplCheck = false
+        requireStateEquivalenceImplCheck = false,
+        sequentialSpecification = SequentialSpecification::class
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n1 - 1}")
     @OpGroupConfig(name = "writer", nonParallel = true)
@@ -58,7 +67,8 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
         iterations = 200,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
-        requireStateEquivalenceImplCheck = false
+        requireStateEquivalenceImplCheck = false,
+        sequentialSpecification = SequentialSpecification::class
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n2 - 1}")
     class LinCheckDynamicConnectivityConcurrentStressTest2 {
@@ -85,7 +95,8 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
         iterations = 200,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
-        requireStateEquivalenceImplCheck = false
+        requireStateEquivalenceImplCheck = false,
+        sequentialSpecification = SequentialSpecification::class
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n3 - 1}")
     class LinCheckDynamicConnectivityConcurrentStressTest3 {

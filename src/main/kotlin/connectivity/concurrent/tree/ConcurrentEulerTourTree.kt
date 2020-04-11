@@ -1,6 +1,7 @@
 package connectivity.concurrent.tree
 
 import connectivity.sequential.tree.TreeDynamicConnectivity
+import org.cliffc.high_scale_lib.NonBlockingHashMap
 import java.util.*
 import kotlin.collections.HashSet
 import kotlin.random.Random
@@ -24,7 +25,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
 
 class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<Node>
-    private val edgeToNode = mutableMapOf<Pair<Int, Int>, Node>()
+    private val edgeToNode = NonBlockingHashMap<Pair<Int, Int>, Node>()
     private val random = Random(0)
 
     init {
@@ -81,7 +82,6 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     fun removeEdge(u: Int, v: Int, doSplit: Boolean): Pair<Node, Node> {
         val edgeNode = edgeToNode[Pair(u, v)]!!
         val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
-
         var leftPosition = edgeNode.position()
         var rightPosition = reverseEdgeNode.position()
 

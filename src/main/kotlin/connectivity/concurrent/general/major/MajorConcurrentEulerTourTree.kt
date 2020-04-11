@@ -1,6 +1,8 @@
 package connectivity.concurrent.general.major
 
 import connectivity.sequential.tree.TreeDynamicConnectivity
+import org.cliffc.high_scale_lib.NonBlockingHashMap
+import java.lang.Exception
 import java.util.*
 import kotlin.collections.HashSet
 import kotlin.random.Random
@@ -26,7 +28,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
 
 class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<Node>
-    private val edgeToNode = mutableMapOf<Pair<Int, Int>, Node>()
+    private val edgeToNode = NonBlockingHashMap<Pair<Int, Int>, Node>()
     private val random = Random(0)
 
     init {
@@ -51,6 +53,10 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val vRoot = root(vNode, additionalRoot)
 
         // linearization point
+        if (uRoot == vRoot) {
+            println("!")
+        }
+
         if (uRoot.priority < vRoot.priority) {
             vRoot.parent = uRoot
             uRoot.version++
@@ -73,9 +79,14 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 
     fun removeEdge(u: Int, v: Int, doSplit: Boolean): Pair<Node, Node> {
+        try {
+
+            val edgeNode = edgeToNode[Pair(u, v)]!!
+        } catch(e: Exception) {
+            println("fdgdf")
+        }
         val edgeNode = edgeToNode[Pair(u, v)]!!
         val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
-
         var leftPosition = edgeNode.position()
         var rightPosition = reverseEdgeNode.position()
 
@@ -113,8 +124,8 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         if (u == v) return true
 
         while (true) {
-            val uRoot = rootReader(u).withVersion()
-            val vRoot = rootReader(v).withVersion()
+            val uRoot = root(u).withVersion()
+            val vRoot = root(v).withVersion()
             if (!rereadRoot(u, uRoot) ||
                 !rereadRoot(v, vRoot)) continue
             return uRoot == vRoot
@@ -142,10 +153,8 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     fun state() = Pair(edgeToNode.keys, edgeToNode.values.map { it.priority }) // the tree is determined by (value, priority) pairs
 
     private fun rereadRoot(v: Int, was: Pair<Node, Int>): Boolean {
-        return rootReader(v).withVersion() == was
+        return root(v).withVersion() == was
     }
-
-    private fun rootReader(v: Int): Node = rootReader(nodes[v])
 
     fun root(v : Int): Node = root(nodes[v])
 
@@ -157,16 +166,6 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         var node = n
         var parent = node.parent
         while (parent != null && node !== additionalRoot) {
-            node = parent
-            parent = node.parent
-        }
-        return node
-    }
-
-    private fun rootReader(n: Node): Node {
-        var node = n
-        var parent = node.parent
-        while (parent != null) {
             node = parent
             parent = node.parent
         }

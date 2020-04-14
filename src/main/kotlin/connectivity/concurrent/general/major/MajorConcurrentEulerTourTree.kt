@@ -16,9 +16,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
     val nonTreeEdges: MajorQueue<Pair<Int, Int>>? = if (isVertex) MajorQueue() else null // for storing non-tree edges in general case
     @Volatile
     var hasNonTreeEdges: Boolean = false // for traversal
-    @Volatile
     var currentLevelTreeEdge: Pair<Int, Int>? = treeEdge
-    @Volatile
     var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != null
     @Volatile
     var version = 0
@@ -238,7 +236,14 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
 internal fun Node.recalculate() {
     size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
-    hasNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
+    val shouldHaveNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
+    hasNonTreeEdges = shouldHaveNonTreeEdges
+    if (!shouldHaveNonTreeEdges) {
+        // the second check is needed, because could accidentally rewrite value written by non-blocking additions
+        val shouldHaveNonTreeEdges2 = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
+        if (shouldHaveNonTreeEdges2)
+            hasNonTreeEdges = true
+    }
     hasCurrentLevelTreeEdges = currentLevelTreeEdge != null || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
 }
 

@@ -7,8 +7,8 @@ import org.jetbrains.kotlinx.lincheck.CTestStructure
 import org.jetbrains.kotlinx.lincheck.execution.ExecutionGenerator
 import org.jetbrains.kotlinx.lincheck.execution.ExecutionScenario
 import java.lang.reflect.Method
-import java.util.*
 import kotlin.math.max
+import kotlin.random.Random
 
 
 // important: ignores actorsAfter and actorsAfter
@@ -19,7 +19,7 @@ class GeneralDynamicConnectivityMultipleWriterExecutionGenerator(testConfigurati
     private val removeEdgeMethod: Method
     private val connectedMethod: Method
     private val scenarioGenerator = ScenarioGenerator()
-    private val random = Random()
+    private val random = Random(23)
 
     init {
         var m = 0
@@ -46,7 +46,7 @@ class GeneralDynamicConnectivityMultipleWriterExecutionGenerator(testConfigurati
             QueryType.CONNECTED -> connectedActor(op.to(), op.from())
         }
 
-        val graph = randomGraph(n, 2 * n) // TODO: pass rnd here
+        val graph = randomGraph(n, 2 * n, random)
 
         val scenario = scenarioGenerator.generate(graph, threads, actorsPerThread, 1, 1)
 

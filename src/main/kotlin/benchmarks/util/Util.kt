@@ -13,14 +13,13 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 
-fun randomGraph(nodes: Int, edges: Int): Graph {
-    val r = Random(0)
+fun randomGraph(nodes: Int, edges: Int, rnd: Random = Random(0)): Graph {
     val edgesList = mutableListOf<Long>()
     val presentEdges = mutableSetOf<Long>()
     repeat(edges) {
         while (true) {
-            val first = r.nextInt(nodes)
-            val second = r.nextInt(nodes)
+            val first = rnd.nextInt(nodes)
+            val second = rnd.nextInt(nodes)
             if (first == second) continue
             if (presentEdges.contains(
                     bidirectionalEdge(

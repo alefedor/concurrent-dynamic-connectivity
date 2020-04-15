@@ -313,7 +313,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
 
     // level 0 is a special case
     private fun findReplacement0(node: Node, additionalRoot: Node, currentOperationInfo: RemovalOperationInfo): Boolean {
-        //if (!node.hasNonTreeEdges) return false
+        if (!node.hasNonTreeEdges) return false
 
         val nonTreeEdges = node.nonTreeEdges
         var foundReplacement = false

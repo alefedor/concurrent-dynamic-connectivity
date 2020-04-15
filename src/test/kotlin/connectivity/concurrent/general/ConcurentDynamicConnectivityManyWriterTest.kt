@@ -138,14 +138,7 @@ class ConcurrentDynamicConnectivityManyWriterTest(dcp: ConcurrentGeneralDynamicC
 
     @Test
     fun test2() {
-        try {
-            LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest2::class.java)
-        } catch (e: Throwable) {
-            synchronized(log) {
-                println(log.toString())
-            }
-            throw  e
-        }
+        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest2::class.java)
     }
 
     @Test

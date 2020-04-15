@@ -48,7 +48,7 @@ class GeneralDynamicConnectivityMultipleWriterExecutionGenerator(testConfigurati
 
         val graph = randomGraph(n, 2 * n, random)
 
-        val scenario = scenarioGenerator.generate(graph, threads, actorsPerThread, 1, 1)
+        val scenario = scenarioGenerator.generate(graph, threads, actorsPerThread, 4, 1)
 
         val initExecution = scenario.initialEdges.map { addEdgeActor(it.to(), it.from()) }
         val postExecution = graph.edges.map { connectedActor(it.to(), it.from()) }

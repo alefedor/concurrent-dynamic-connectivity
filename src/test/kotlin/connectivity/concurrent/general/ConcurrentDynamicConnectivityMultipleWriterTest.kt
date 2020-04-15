@@ -1,6 +1,7 @@
 package connectivity.concurrent.general
 
 import connectivity.concurrent.GeneralDynamicConnectivityMultipleWriterExecutionGenerator
+import connectivity.concurrent.general.major.log
 import connectivity.sequential.SlowConnectivity
 import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
@@ -15,6 +16,9 @@ import org.junit.runners.Parameterized
 private const val n1 = 5
 private const val n2 = 7
 private const val n3 = 9
+
+private const val actorsPerThread = 7
+private const val iterations = 10000
 
 @RunWith(Parameterized::class)
 class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
@@ -33,8 +37,8 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
     @StressCTest(
         actorsAfter = 2 * n1,
         actorsBefore = n1,
-        actorsPerThread = 7,
-        iterations = 5000,
+        actorsPerThread = actorsPerThread,
+        iterations = iterations,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false
@@ -62,8 +66,8 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
     @StressCTest(
         actorsAfter = 2 * n2,
         actorsBefore = n2,
-        actorsPerThread = 7,
-        iterations = 4500,
+        actorsPerThread = actorsPerThread,
+        iterations = iterations,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false
@@ -71,6 +75,10 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
     @Param(name = "a", gen = IntGen::class, conf = "0:${n2 - 1}")
     class LinCheckDynamicConnectivityConcurrentStressTest2 {
         private val dc = globalDcpConstructor.construct(n2)
+
+        init {
+            log.clear()
+        }
 
         @Operation
         fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
@@ -89,8 +97,8 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
     @StressCTest(
         actorsAfter = 2 * n3,
         actorsBefore = n3,
-        actorsPerThread = 7,
-        iterations = 4000,
+        actorsPerThread = actorsPerThread,
+        iterations = iterations,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false
@@ -126,7 +134,14 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
 
     @Test
     fun test2() {
-        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest2::class.java)
+        try {
+            LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest2::class.java)
+        } catch (e: Throwable) {
+            synchronized(log) {
+                println(log.toString())
+            }
+            throw  e
+        }
     }
 
     @Test

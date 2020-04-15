@@ -15,7 +15,6 @@ import org.junit.runners.Parameterized
 
 private const val n1 = 5
 private const val n2 = 7
-private const val n3 = 9
 
 private const val actorsPerThread = 4
 private const val iterations = 1000
@@ -97,34 +96,6 @@ class ConcurrentDynamicConnectivityManyWriterTest(dcp: ConcurrentGeneralDynamicC
         fun connected(@Param(name = "a") a: Int, @Param(name = "a") b: Int) = dc.connected(a, b)
     }
 
-    @StressCTest(
-        actorsAfter = 2 * n3,
-        actorsBefore = n3,
-        actorsPerThread = actorsPerThread,
-        iterations = iterations,
-        generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
-        minimizeFailedScenario = false,
-        requireStateEquivalenceImplCheck = false,
-        threads = threads
-    )
-    @Param(name = "a", gen = IntGen::class, conf = "0:${n3 - 1}")
-    class LinCheckDynamicConnectivityConcurrentStressTest3 {
-        private val dc = globalDcpConstructor.construct(n3)
-
-        @Operation
-        fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
-            dc.addEdge(a, b)
-        }
-
-        @Operation
-        fun removeEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
-            dc.removeEdge(a, b)
-        }
-
-        @Operation
-        fun connected(@Param(name = "a") a: Int, @Param(name = "a") b: Int) = dc.connected(a, b)
-    }
-
     companion object {
         @JvmStatic
         @Parameterized.Parameters
@@ -139,10 +110,5 @@ class ConcurrentDynamicConnectivityManyWriterTest(dcp: ConcurrentGeneralDynamicC
     @Test
     fun test2() {
         LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest2::class.java)
-    }
-
-    @Test
-    fun test3() {
-        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest3::class.java)
     }
 }

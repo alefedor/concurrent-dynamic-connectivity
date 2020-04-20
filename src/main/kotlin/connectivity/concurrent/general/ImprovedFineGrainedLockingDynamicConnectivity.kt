@@ -1,19 +1,19 @@
 package connectivity.concurrent.general
 
+import connectivity.ConcurrentEdgeMap
 import connectivity.concurrent.tree.ConcurrentEulerTourTree
-import connectivity.concurrent.tree.Node
+import connectivity.concurrent.tree.ConcurrentETTNode
 import connectivity.concurrent.tree.recalculate
 import connectivity.concurrent.tree.update
 import connectivity.sequential.general.DynamicConnectivity
 import org.cliffc.high_scale_lib.NonBlockingHashMap
 import java.lang.IllegalStateException
-import kotlin.collections.HashMap
 import kotlin.math.max
 import kotlin.math.min
 
 class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<ConcurrentEulerTourTree>
-    private val ranks = NonBlockingHashMap<Pair<Int, Int>, Int>()
+    private val ranks = ConcurrentEdgeMap<Int>()
 
     init {
         var levelNumber = 1
@@ -99,7 +99,7 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
 
     override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
 
-    private fun increaseTreeEdgesRank(node: Node, u: Int, v: Int, rank: Int) {
+    private fun increaseTreeEdgesRank(node: ConcurrentETTNode, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
 
         node.currentLevelTreeEdge?.let {
@@ -121,7 +121,7 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
         node.recalculate()
     }
 
-    private fun findReplacement(node: Node, rank: Int, additionalRoot: Node): Pair<Int, Int>? {
+    private fun findReplacement(node: ConcurrentETTNode, rank: Int, additionalRoot: ConcurrentETTNode): Pair<Int, Int>? {
         if (!node.hasNonTreeEdges) return null
 
         val iterator = node.nonTreeEdges.iterator()

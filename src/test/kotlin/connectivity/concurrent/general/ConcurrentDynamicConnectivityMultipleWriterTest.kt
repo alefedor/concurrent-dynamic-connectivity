@@ -18,7 +18,7 @@ private const val n2 = 7
 private const val n3 = 9
 
 private const val actorsPerThread = 7
-private const val iterations = 10000
+private const val iterations = 1000
 
 @RunWith(Parameterized::class)
 class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {

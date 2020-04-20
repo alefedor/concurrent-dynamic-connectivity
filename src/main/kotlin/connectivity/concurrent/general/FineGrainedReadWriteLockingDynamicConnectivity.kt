@@ -1,85 +1,18 @@
 package connectivity.concurrent.general
 
+import connectivity.ConcurrentEdgeMap
+import connectivity.concurrent.tree.ReadWriteFineGrainedETTNode
+import connectivity.concurrent.tree.ReadWriteFineGrainedEulerTourTree
+import connectivity.concurrent.tree.recalculate
+import connectivity.concurrent.tree.update
 import connectivity.sequential.general.DynamicConnectivity
-import connectivity.sequential.tree.TreeDynamicConnectivity
-import java.util.*
-import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.random.Random
 
 class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
-    private val connectivity = FineGrainedReadWriteDynamicConnectivity(size)
-
-    @Synchronized
-    override fun addEdge(u: Int, v: Int) = lockComponentsWrite(u, v) { connectivity.addEdge(u, v) }
-
-    @Synchronized
-    override fun removeEdge(u: Int, v: Int) = lockComponentsWrite(u, v) { connectivity.removeEdge(u, v) }
-
-    @Synchronized
-    override fun connected(u: Int, v: Int): Boolean {
-        var result: Boolean = false
-        lockComponentsRead(u, v) { result = connectivity.connected(u, v) }
-        return result
-    }
-
-    private inline fun lockComponentsRead(u: Int, v: Int, body: () -> Unit) {
-        while (true) {
-            val uRoot = connectivity.root(u)
-            val vRoot = connectivity.root(v)
-
-            if (uRoot.priority < vRoot.priority) {
-                uRoot.lock!!.readLock().lock()
-                vRoot.lock!!.readLock().lock()
-            } else {
-                vRoot.lock!!.readLock().lock()
-                uRoot.lock!!.readLock().lock()
-            }
-
-            if (uRoot == connectivity.root(u) && vRoot == connectivity.root(v)) {
-                body()
-                uRoot.lock.readLock().unlock()
-                vRoot.lock.readLock().unlock()
-                break
-            }
-
-            uRoot.lock.readLock().unlock()
-            vRoot.lock.readLock().unlock()
-        }
-    }
-
-    private inline fun lockComponentsWrite(u: Int, v: Int, body: () -> Unit) {
-        while (true) {
-            val uRoot = connectivity.root(u)
-            val vRoot = connectivity.root(v)
-
-            if (uRoot.priority < vRoot.priority) {
-                uRoot.lock!!.writeLock().lock()
-                vRoot.lock!!.writeLock().lock()
-            } else {
-                vRoot.lock!!.writeLock().lock()
-                uRoot.lock!!.writeLock().lock()
-            }
-
-            if (uRoot == connectivity.root(u) && vRoot == connectivity.root(v)) {
-                body()
-                uRoot.lock.writeLock().unlock()
-                vRoot.lock.writeLock().unlock()
-                break
-            }
-
-            uRoot.lock.writeLock().unlock()
-            vRoot.lock.writeLock().unlock()
-        }
-    }
-}
-
-class FineGrainedReadWriteDynamicConnectivity (private val size: Int) : DynamicConnectivity {
-    private val levels: Array<FineGrainedReadWriteEulerTourTree>
-    private val ranks = HashMap<Pair<Int, Int>, Int>()
+    private val levels: Array<ReadWriteFineGrainedEulerTourTree>
+    private val ranks = ConcurrentEdgeMap<Int>()
 
     init {
         var levelNumber = 1
@@ -88,10 +21,10 @@ class FineGrainedReadWriteDynamicConnectivity (private val size: Int) : DynamicC
             levelNumber++
             maxSize *= 2
         }
-        levels = Array(levelNumber) { FineGrainedReadWriteEulerTourTree(size) }
+        levels = Array(levelNumber) { ReadWriteFineGrainedEulerTourTree(size) }
     }
 
-    override fun addEdge(u: Int, v: Int) {
+    override fun addEdge(u: Int, v: Int) = lockComponentsWrite(u, v) {
         val edge = Pair(min(u, v), max(u, v))
         ranks[edge] = 0
         if (!levels[0].connected(u, v)) {
@@ -106,7 +39,7 @@ class FineGrainedReadWriteDynamicConnectivity (private val size: Int) : DynamicC
         }
     }
 
-    override fun removeEdge(u: Int, v: Int) {
+    override fun removeEdge(u: Int, v: Int) = lockComponentsWrite(u, v) {
         val edge = Pair(min(u, v), max(u, v))
         val rank = ranks[edge] ?: return
         ranks.remove(edge)
@@ -150,11 +83,17 @@ class FineGrainedReadWriteDynamicConnectivity (private val size: Int) : DynamicC
 
     }
 
-    override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
+    override fun connected(u: Int, v: Int): Boolean {
+        var result = false
+        lockComponentsRead(u, v) {
+            result = levels[0].connected(u, v)
+        }
+        return result
+    }
 
-    fun root(u: Int): FGRWNode = levels[0].root(u)
+    fun root(u: Int): ReadWriteFineGrainedETTNode = levels[0].root(u)
 
-    private fun increaseTreeEdgesRank(node: FGRWNode, u: Int, v: Int, rank: Int) {
+    private fun increaseTreeEdgesRank(node: ReadWriteFineGrainedETTNode, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
 
         node.currentLevelTreeEdge?.let {
@@ -176,7 +115,7 @@ class FineGrainedReadWriteDynamicConnectivity (private val size: Int) : DynamicC
         node.recalculate()
     }
 
-    private fun findReplacement(node: FGRWNode, rank: Int): Pair<Int, Int>? {
+    private fun findReplacement(node: ReadWriteFineGrainedETTNode, rank: Int): Pair<Int, Int>? {
         if (!node.hasNonTreeEdges) return null
 
         val iterator = node.nonTreeEdges.iterator()
@@ -185,9 +124,9 @@ class FineGrainedReadWriteDynamicConnectivity (private val size: Int) : DynamicC
 
         while (iterator.hasNext()) {
             val edge = iterator.next()
-            val firstFGRWNode = levels[rank].node(edge.first)
-            if (firstFGRWNode != node)
-                firstFGRWNode.update {
+            val firstNode = levels[rank].node(edge.first)
+            if (firstNode != node)
+                firstNode.update {
                     nonTreeEdges.remove(edge)
                 }
             else
@@ -225,176 +164,54 @@ class FineGrainedReadWriteDynamicConnectivity (private val size: Int) : DynamicC
         node.recalculate()
         return result
     }
-}
 
-class FGRWNode(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>? = null) {
-    @Volatile
-    var parent: FGRWNode? = null
-    var left: FGRWNode? = null
-    var right: FGRWNode? = null
-    var size: Int = 1
-    val nonTreeEdges: MutableSet<Pair<Int, Int>> = if (isVertex) HashSet() else Collections.emptySet() // for storing non-tree edges in general case
-    var hasNonTreeEdges: Boolean = false // for traversal
-    var currentLevelTreeEdge: Pair<Int, Int>? = treeEdge
-    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != null
-    val lock: ReentrantReadWriteLock? = if (isVertex) ReentrantReadWriteLock() else null
-}
-
-class FineGrainedReadWriteEulerTourTree(val size: Int) : TreeDynamicConnectivity {
-    private val nodes: Array<FGRWNode>
-    private val edgeToFGRWNode = mutableMapOf<Pair<Int, Int>, FGRWNode>()
-    private val random = Random(0)
-
-    init {
-        // priorities for vertices are numbers in [0, size)
-        // priorities for edges are random numbers in [size, 11 * size)
-        // priorities for nodes are less so that roots will be always vertices, not nodes
-        val priorities = List(size) { it }.shuffled(random)
-        nodes = Array(size) { FGRWNode(priorities[it]) }
-    }
-
-    override fun addEdge(u: Int, v: Int) = addEdge(u, v, true)
-
-    fun addEdge(u: Int, v: Int, isCurrentLevelTreeEdge: Boolean) {
-        val uFGRWNode = nodes[u]
-        val vFGRWNode = nodes[v]
-
-        // rotate tours so that u and v become first nodes of the tours
-        makeFirst(uFGRWNode)
-        makeFirst(vFGRWNode)
-
-        val uRoot = root(uFGRWNode)
-        val vRoot = root(vFGRWNode)
-
-        val uv = FGRWNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(u, v) else null)
-        val vu = FGRWNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(v, u) else null)
-
-        edgeToFGRWNode[Pair(u, v)] = uv
-        edgeToFGRWNode[Pair(v, u)] = vu
-        // add uv and vu edges and merge tours
-        merge(merge(uRoot, uv), merge(vRoot, vu))
-    }
-
-    override fun removeEdge(u: Int, v: Int) {
-        val edgeFGRWNode = edgeToFGRWNode[Pair(u, v)]!!
-        val reverseEdgeFGRWNode = edgeToFGRWNode[Pair(v, u)]!!
-
-        var leftPosition = edgeFGRWNode.position()
-        var rightPosition = reverseEdgeFGRWNode.position()
-
-        if (leftPosition > rightPosition) {
-            val tmp = rightPosition
-            rightPosition = leftPosition
-            leftPosition = tmp
-        }
-
-        val root = root(u)
-        // cut the [leftPosition, rightPosition] segment out of the tree
-        var div1 = split(root, rightPosition + 1)
-        div1 = Pair(split(div1.first, rightPosition).first, div1.second) // forget (v, u)
-        val div2 = split(div1.first, leftPosition)
-
-        val component1 = merge(div2.first, div1.second)
-        val component2 = split(div2.second, 1).second // forget (u, v)
-
-        component1?.parent = null
-        component2?.parent = null
-
-        edgeToFGRWNode.remove(Pair(u, v))
-        edgeToFGRWNode.remove(Pair(v, u))
-    }
-
-    override fun connected(u: Int, v: Int): Boolean = root(u) == root(v)
-
-    fun root(u: Int): FGRWNode = root(nodes[u])
-
-    fun node(u: Int): FGRWNode = nodes[u]
-
-    private fun root(n: FGRWNode): FGRWNode {
-        var node = n
-        var parent = node.parent
-        while (parent != null) {
-            node = parent
-            parent = node.parent
-        }
-        return node
-    }
-
-    // [prefix node suffix] -> [node suffix prefix] (rotation)
-    private fun makeFirst(node: FGRWNode) {
-        val root = root(node)
-        val position = node.position()
-        val div = split(root, position) // ([A], [node B])
-        merge(div.second, div.first)
-    }
-
-    /**
-     * Note, that the parent for the second tree will be same.
-     * [sizeLeft] is the number of nodes that should go to the left tree
-     */
-    private fun split(node: FGRWNode?, sizeLeft: Int): Pair<FGRWNode?, FGRWNode?> {
-        if (node == null) return Pair(null, null)
-
-        val toTheLeft = 1 + (node.left?.size ?: 0)
-        return if (toTheLeft <= sizeLeft) {
-            // node goes to the left part
-            val division = split(node.right, sizeLeft - toTheLeft)
-            node.right = division.first
-            node.right?.parent = node
-            node.recalculate()
-            Pair(node, division.second)
-        } else {
-            // node goes to the right part
-            val division = split(node.left, sizeLeft)
-            node.left = division.second
-            node.left?.parent = node
-            node.recalculate()
-            Pair(division.first, node)
-        }
-    }
-
-    private fun merge(a: FGRWNode?, b: FGRWNode?): FGRWNode? {
-        if (a == null) return b
-        if (b == null) return a
-        return if (a.priority < b.priority) {
-            a.right = merge(a.right, b)
-            a.right?.parent = a
-            a.recalculate()
-            a
-        } else {
-            b.left = merge(a, b.left)
-            b.left?.parent = b
-            b.recalculate()
-            b
-        }
-    }
-
-    /// from 0 to n - 1
-    private fun FGRWNode.position(): Int {
-        var position = (this.left?.size ?: 0)
-        var current = this
+    private inline fun lockComponentsRead(u: Int, v: Int, body: () -> Unit) {
         while (true) {
-            val parent = current.parent ?: break
-            if (current == parent.right)
-                position += 1 + (parent.left?.size ?: 0)
-            current = parent
+            val uRoot = root(u)
+            val vRoot = root(v)
+
+            if (uRoot.priority < vRoot.priority) {
+                uRoot.lock!!.readLock().lock()
+                vRoot.lock!!.readLock().lock()
+            } else {
+                vRoot.lock!!.readLock().lock()
+                uRoot.lock!!.readLock().lock()
+            }
+
+            if (uRoot == root(u) && vRoot == root(v)) {
+                body()
+                uRoot.lock.readLock().unlock()
+                vRoot.lock.readLock().unlock()
+                break
+            }
+
+            uRoot.lock.readLock().unlock()
+            vRoot.lock.readLock().unlock()
         }
-        return position
     }
-}
 
-internal fun FGRWNode.recalculate() {
-    size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
-    hasNonTreeEdges = nonTreeEdges.isNotEmpty() || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
-    hasCurrentLevelTreeEdges = currentLevelTreeEdge != null || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
-}
+    private inline fun lockComponentsWrite(u: Int, v: Int, body: () -> Unit) {
+        while (true) {
+            val uRoot = root(u)
+            val vRoot = root(v)
 
-internal fun FGRWNode.recalculateUp() {
-    recalculate()
-    parent?.recalculateUp()
-}
+            if (uRoot.priority < vRoot.priority) {
+                uRoot.lock!!.writeLock().lock()
+                vRoot.lock!!.writeLock().lock()
+            } else {
+                vRoot.lock!!.writeLock().lock()
+                uRoot.lock!!.writeLock().lock()
+            }
 
-internal fun FGRWNode.update(body: FGRWNode.() -> Unit) {
-    body()
-    recalculateUp()
+            if (uRoot == root(u) && vRoot == root(v)) {
+                body()
+                uRoot.lock.writeLock().unlock()
+                vRoot.lock.writeLock().unlock()
+                break
+            }
+
+            uRoot.lock.writeLock().unlock()
+            vRoot.lock.writeLock().unlock()
+        }
+    }
 }

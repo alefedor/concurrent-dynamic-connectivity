@@ -1,6 +1,7 @@
 package connectivity.concurrent.tree
 
 import connectivity.concurrent.TreeDynamicConnectivitySingleWriterExecutionGenerator
+import connectivity.concurrent.general.major.MajorConcurrentEulerTourTree
 import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
 import org.jetbrains.kotlinx.lincheck.annotations.Operation
@@ -16,7 +17,7 @@ private const val n = 6
 @Param(name = "a", gen = IntGen::class, conf = "0:${n - 1}")
 @OpGroupConfig(name = "writer", nonParallel = true)
 class ConcurrentEulerTourTreeConcurrentStressTest : VerifierState() {
-    private val dc = ConcurrentEulerTourTree(n)
+    private val dc = MajorConcurrentEulerTourTree(n)
 
     @Operation(group = "writer")
     fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {

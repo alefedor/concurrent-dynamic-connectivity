@@ -2,6 +2,9 @@ package connectivity.sequential.tree
 
 import connectivity.concurrent.general.major.MajorConcurrentEulerTourTree
 import connectivity.concurrent.tree.ConcurrentEulerTourTree
+import connectivity.concurrent.tree.ConcurrentFineGrainedEulerTourTree
+import connectivity.concurrent.tree.FineGrainedEulerTourTree
+import connectivity.concurrent.tree.ReadWriteFineGrainedEulerTourTree
 import connectivity.sequential.OperationType
 import connectivity.sequential.SlowConnectivity
 import connectivity.sequential.DynamicConnectivityScenarioGenerator
@@ -14,6 +17,9 @@ import org.junit.runners.Parameterized
 enum class TreeDynamicConnectivityConstructor(val construct: (size: Int) -> TreeDynamicConnectivity) {
     SequentialEulerTourTree(::SequentialEulerTourTree),
     ConcurrentEulerTourTree(::ConcurrentEulerTourTree),
+    ConcurrentFineGrainedEulerTourTree(::ConcurrentFineGrainedEulerTourTree),
+    FineGrainedEulerTourTree(::FineGrainedEulerTourTree),
+    ReadWriteFineGrainedEulerTourTree(::ReadWriteFineGrainedEulerTourTree),
     MajorConcurrentEulerTourTree(::MajorConcurrentEulerTourTree)
 }
 

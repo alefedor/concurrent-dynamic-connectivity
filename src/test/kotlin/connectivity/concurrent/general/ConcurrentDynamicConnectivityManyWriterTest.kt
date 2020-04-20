@@ -17,7 +17,7 @@ private const val n1 = 5
 private const val n2 = 7
 
 private const val actorsPerThread = 4
-private const val iterations = 1000
+private const val iterations = 700
 private const val threads = 3
 
 @RunWith(Parameterized::class)

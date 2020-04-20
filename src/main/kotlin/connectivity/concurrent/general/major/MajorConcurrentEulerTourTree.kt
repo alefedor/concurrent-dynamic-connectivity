@@ -27,7 +27,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
 class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<Node>
     private val edgeToNode = NonBlockingHashMap<Pair<Int, Int>, Node>()
-    private val random = Random(0)
+    private val random = java.util.Random(0)
 
     init {
         // priorities for vertices are numbers in [0, size)
@@ -122,8 +122,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         while (true) {
             val uRoot = root(u).withVersion()
             val vRoot = root(v).withVersion()
-            if (!rereadRoot(u, uRoot) ||
-                !rereadRoot(v, vRoot)) continue
+            if (!rereadRoot(u, uRoot)) continue
             return uRoot == vRoot
         }
     }

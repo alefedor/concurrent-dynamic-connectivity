@@ -7,11 +7,11 @@ import connectivity.sequential.tree.TreeDynamicConnectivity
 import java.util.*
 import kotlin.random.Random
 
-class ConcurrentETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>? = null) {
+class ConcurrentFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>? = null) {
     @Volatile
-    var parent: ConcurrentETTNode? = null
-    var left: ConcurrentETTNode? = null
-    var right: ConcurrentETTNode? = null
+    var parent: ConcurrentFineGrainedETTNode? = null
+    var left: ConcurrentFineGrainedETTNode? = null
+    var right: ConcurrentFineGrainedETTNode? = null
     var size: Int = 1
     val nonTreeEdges: MutableSet<Pair<Int, Int>> = if (isVertex) SequentialEdgeSet() else Collections.emptySet() // for storing non-tree edges in general case
     @Volatile
@@ -24,22 +24,23 @@ class ConcurrentETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: P
     var version = 0
 }
 
-class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
-    private val nodes: Array<ConcurrentETTNode>
-    private val edgeToNode = SequentialEdgeMap<ConcurrentETTNode>()
-    private val random = Random(0)
+// Concurrent ETT version with concurrent map for fine-grained operations
+class ConcurrentFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
+    private val nodes: Array<ConcurrentFineGrainedETTNode>
+    private val edgeToNode = ConcurrentEdgeMap<ConcurrentFineGrainedETTNode>()
+    private val random = java.util.Random(0)
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not nodes
         val priorities = List(size) { it }.shuffled(random)
-        nodes = Array(size) { ConcurrentETTNode(priorities[it]) }
+        nodes = Array(size) { ConcurrentFineGrainedETTNode(priorities[it]) }
     }
 
     override fun addEdge(u: Int, v: Int) = addEdge(u, v, true, null)
 
-    fun addEdge(u: Int, v: Int, isCurrentLevelTreeEdge: Boolean, additionalRoot: ConcurrentETTNode?) {
+    fun addEdge(u: Int, v: Int, isCurrentLevelTreeEdge: Boolean, additionalRoot: ConcurrentFineGrainedETTNode?) {
         val uNode = nodes[u]
         val vNode = nodes[v]
 
@@ -59,12 +60,12 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             vRoot.version++
         }
 
-        val uv = ConcurrentETTNode(
+        val uv = ConcurrentFineGrainedETTNode(
             size + random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge) Pair(u, v) else null
         )
-        val vu = ConcurrentETTNode(
+        val vu = ConcurrentFineGrainedETTNode(
             size + random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge) Pair(v, u) else null
@@ -80,7 +81,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         removeEdge(u, v, true)
     }
 
-    fun removeEdge(u: Int, v: Int, doSplit: Boolean): Pair<ConcurrentETTNode, ConcurrentETTNode> {
+    fun removeEdge(u: Int, v: Int, doSplit: Boolean): Pair<ConcurrentFineGrainedETTNode, ConcurrentFineGrainedETTNode> {
         val edgeNode = edgeToNode[Pair(u, v)]!!
         val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
         var leftPosition = edgeNode.position()
@@ -128,7 +129,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         }
     }
 
-    internal fun connectedSimple(u: Int, v: Int, additionalRoot: ConcurrentETTNode?): Boolean {
+    internal fun connectedSimple(u: Int, v: Int, additionalRoot: ConcurrentFineGrainedETTNode?): Boolean {
         if (u == v) return true
 
         val uRoot = root(u, additionalRoot)
@@ -139,19 +140,19 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
     fun state() = Pair(edgeToNode.keys, edgeToNode.values.map { it.priority }) // the tree is determined by (value, priority) pairs
 
-    private fun rereadRoot(v: Int, was: Pair<ConcurrentETTNode, Int>): Boolean {
+    private fun rereadRoot(v: Int, was: Pair<ConcurrentFineGrainedETTNode, Int>): Boolean {
         return rootReader(v).withVersion() == was
     }
 
-    private fun rootReader(v: Int): ConcurrentETTNode = rootReader(nodes[v])
+    private fun rootReader(v: Int): ConcurrentFineGrainedETTNode = rootReader(nodes[v])
 
-    fun root(v : Int): ConcurrentETTNode = root(nodes[v])
+    fun root(v : Int): ConcurrentFineGrainedETTNode = root(nodes[v])
 
-    fun node(u: Int): ConcurrentETTNode = nodes[u]
+    fun node(u: Int): ConcurrentFineGrainedETTNode = nodes[u]
 
-    private fun root(v: Int, additionalRoot: ConcurrentETTNode? = null): ConcurrentETTNode = root(nodes[v], additionalRoot)
+    private fun root(v: Int, additionalRoot: ConcurrentFineGrainedETTNode? = null): ConcurrentFineGrainedETTNode = root(nodes[v], additionalRoot)
 
-    private fun root(n: ConcurrentETTNode, additionalRoot: ConcurrentETTNode? = null): ConcurrentETTNode {
+    private fun root(n: ConcurrentFineGrainedETTNode, additionalRoot: ConcurrentFineGrainedETTNode? = null): ConcurrentFineGrainedETTNode {
         var node = n
         var parent = node.parent
         while (parent != null && node !== additionalRoot) {
@@ -161,7 +162,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         return node
     }
 
-    private fun rootReader(n: ConcurrentETTNode): ConcurrentETTNode {
+    private fun rootReader(n: ConcurrentFineGrainedETTNode): ConcurrentFineGrainedETTNode {
         var node = n
         var parent = node.parent
         while (parent != null) {
@@ -172,7 +173,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 
     // [prefix node suffix] -> [node suffix prefix] (rotation)
-    private fun makeFirst(node: ConcurrentETTNode, additionalRoot: ConcurrentETTNode?) {
+    private fun makeFirst(node: ConcurrentFineGrainedETTNode, additionalRoot: ConcurrentFineGrainedETTNode?) {
         val root = root(node, additionalRoot)
         val position = node.position(additionalRoot)
         val div = split(root, position) // ([A], [node B])
@@ -183,7 +184,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
      * Note, that the parent for the second tree will be same.
      * [sizeLeft] is the number of nodes that should go to the left tree
      */
-    private fun split(node: ConcurrentETTNode?, sizeLeft: Int): Pair<ConcurrentETTNode?, ConcurrentETTNode?> {
+    private fun split(node: ConcurrentFineGrainedETTNode?, sizeLeft: Int): Pair<ConcurrentFineGrainedETTNode?, ConcurrentFineGrainedETTNode?> {
         if (node == null) return Pair(null, null)
 
         val toTheLeft = 1 + (node.left?.size ?: 0)
@@ -204,7 +205,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         }
     }
 
-    private fun merge(a: ConcurrentETTNode?, b: ConcurrentETTNode?): ConcurrentETTNode? {
+    private fun merge(a: ConcurrentFineGrainedETTNode?, b: ConcurrentFineGrainedETTNode?): ConcurrentFineGrainedETTNode? {
         if (a == null) return b
         if (b == null) return a
         return if (a.priority < b.priority) {
@@ -221,7 +222,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 
     /// from 0 to n - 1
-    private fun ConcurrentETTNode.position(additionalRoot: ConcurrentETTNode? = null): Int {
+    private fun ConcurrentFineGrainedETTNode.position(additionalRoot: ConcurrentFineGrainedETTNode? = null): Int {
         var position = (this.left?.size ?: 0)
         var current = this
         while (true) {
@@ -234,21 +235,21 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         return position
     }
 
-    private fun ConcurrentETTNode.withVersion() = Pair(this, this.version)
+    private fun ConcurrentFineGrainedETTNode.withVersion() = Pair(this, this.version)
 }
 
-internal fun ConcurrentETTNode.recalculate() {
+internal fun ConcurrentFineGrainedETTNode.recalculate() {
     size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
     hasNonTreeEdges = nonTreeEdges.isNotEmpty() || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
     hasCurrentLevelTreeEdges = currentLevelTreeEdge != null || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
 }
 
-internal fun ConcurrentETTNode.recalculateUp() {
+internal fun ConcurrentFineGrainedETTNode.recalculateUp() {
     recalculate()
     parent?.recalculateUp()
 }
 
-internal fun ConcurrentETTNode.update(body: ConcurrentETTNode.() -> Unit) {
+internal fun ConcurrentFineGrainedETTNode.update(body: ConcurrentFineGrainedETTNode.() -> Unit) {
     body()
     recalculateUp()
 }

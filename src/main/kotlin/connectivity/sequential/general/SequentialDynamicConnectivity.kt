@@ -1,5 +1,6 @@
 package connectivity.sequential.general
 
+import connectivity.SequentialEdgeMap
 import connectivity.sequential.tree.*
 import kotlin.math.max
 import kotlin.math.min
@@ -12,7 +13,7 @@ interface DynamicConnectivity {
 
 class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivity {
     private val levels: Array<SequentialEulerTourTree>
-    private val ranks = HashMap<Pair<Int, Int>, Int>()
+    private val ranks = SequentialEdgeMap<Int>()
 
     init {
         var levelNumber = 1
@@ -85,7 +86,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
 
     override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
 
-    private fun increaseTreeEdgesRank(node: Node, u: Int, v: Int, rank: Int) {
+    private fun increaseTreeEdgesRank(node: SequentialETTNode, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
 
         node.currentLevelTreeEdge?.let {
@@ -107,7 +108,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
         node.recalculate()
     }
 
-    private fun findReplacement(node: Node, rank: Int): Pair<Int, Int>? {
+    private fun findReplacement(node: SequentialETTNode, rank: Int): Pair<Int, Int>? {
         if (!node.hasNonTreeEdges) return null
 
         val iterator = node.nonTreeEdges.iterator()

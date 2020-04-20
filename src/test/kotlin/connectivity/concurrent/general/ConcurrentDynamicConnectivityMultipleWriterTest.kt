@@ -18,7 +18,8 @@ private const val n2 = 7
 private const val n3 = 9
 
 private const val actorsPerThread = 7
-private const val iterations = 1000
+private const val iterations = 100
+private const val invocations = 1000
 
 @RunWith(Parameterized::class)
 class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
@@ -39,6 +40,7 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
         actorsBefore = n1,
         actorsPerThread = actorsPerThread,
         iterations = iterations,
+        invocationsPerIteration = invocations,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false
@@ -68,6 +70,7 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
         actorsBefore = n2,
         actorsPerThread = actorsPerThread,
         iterations = iterations,
+        invocationsPerIteration = invocations,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false
@@ -99,6 +102,7 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
         actorsBefore = n3,
         actorsPerThread = actorsPerThread,
         iterations = iterations,
+        invocationsPerIteration = invocations,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false

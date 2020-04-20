@@ -11,9 +11,9 @@ import org.jetbrains.kotlinx.lincheck.strategy.stress.StressCTest
 import org.jetbrains.kotlinx.lincheck.verifier.VerifierState
 import org.junit.Test
 
-private const val n = 6
+private const val n = 7
 
-@StressCTest(actorsAfter = 5, actorsBefore = 5, iterations = 1000, generator = TreeDynamicConnectivitySingleWriterExecutionGenerator::class)
+@StressCTest(actorsAfter = 5, actorsBefore = 5, actorsPerThread = 7, iterations = 1000, generator = TreeDynamicConnectivitySingleWriterExecutionGenerator::class, minimizeFailedScenario = false)
 @Param(name = "a", gen = IntGen::class, conf = "0:${n - 1}")
 @OpGroupConfig(name = "writer", nonParallel = true)
 class ConcurrentEulerTourTreeStressTest : VerifierState() {

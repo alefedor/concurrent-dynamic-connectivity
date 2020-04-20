@@ -15,7 +15,7 @@ private const val n1 = 7
 private const val n2 = 9
 private const val n3 = 11
 
-private const val iterations = 1000
+private const val iterations = 100
 
 @RunWith(Parameterized::class)
 class ConcurrentDynamicConnectivitySingleWriterTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
@@ -27,10 +27,11 @@ class ConcurrentDynamicConnectivitySingleWriterTest(dcp: ConcurrentGeneralDynami
     @StressCTest(
         actorsAfter = 10,
         actorsBefore = 10,
-        actorsPerThread = 12,
+        actorsPerThread = 10,
         iterations = iterations,
         generator = GeneralDynamicConnectivitySingleWriterExecutionGenerator::class,
-        requireStateEquivalenceImplCheck = false
+        requireStateEquivalenceImplCheck = false,
+        minimizeFailedScenario = false
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n1 - 1}")
     @OpGroupConfig(name = "writer", nonParallel = true)
@@ -55,10 +56,11 @@ class ConcurrentDynamicConnectivitySingleWriterTest(dcp: ConcurrentGeneralDynami
     @StressCTest(
         actorsAfter = 10,
         actorsBefore = 10,
-        actorsPerThread = 12,
+        actorsPerThread = 10,
         iterations = iterations,
         generator = GeneralDynamicConnectivitySingleWriterExecutionGenerator::class,
-        requireStateEquivalenceImplCheck = false
+        requireStateEquivalenceImplCheck = false,
+        minimizeFailedScenario = false
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n2 - 1}")
     @OpGroupConfig(name = "writer", nonParallel = true)
@@ -82,10 +84,11 @@ class ConcurrentDynamicConnectivitySingleWriterTest(dcp: ConcurrentGeneralDynami
     @StressCTest(
         actorsAfter = 10,
         actorsBefore = 10,
-        actorsPerThread = 12,
+        actorsPerThread = 10,
         iterations = iterations,
         generator = GeneralDynamicConnectivitySingleWriterExecutionGenerator::class,
-        requireStateEquivalenceImplCheck = false
+        requireStateEquivalenceImplCheck = false,
+        minimizeFailedScenario = false
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n3 - 1}")
     @OpGroupConfig(name = "writer", nonParallel = true)

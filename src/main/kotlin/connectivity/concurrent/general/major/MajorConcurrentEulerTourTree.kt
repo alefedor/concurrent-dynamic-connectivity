@@ -1,5 +1,6 @@
 package connectivity.concurrent.general.major
 
+import connectivity.ConcurrentEdgeMap
 import connectivity.sequential.tree.TreeDynamicConnectivity
 import org.cliffc.high_scale_lib.NonBlockingHashMap
 import java.lang.Exception
@@ -26,7 +27,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>
 
 class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<Node>
-    private val edgeToNode = NonBlockingHashMap<Pair<Int, Int>, Node>()
+    private val edgeToNode = ConcurrentEdgeMap<Node>()
     private val random = java.util.Random(0)
 
     init {
@@ -109,11 +110,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         edgeToNode.remove(Pair(u, v))
         edgeToNode.remove(Pair(v, u))
 
-        try {
-            return Pair(component1!!, component2!!)
-        } catch(e: Exception) {
-            TODO()
-        }
+        return Pair(component1!!, component2!!)
     }
 
     override fun connected(u: Int, v: Int): Boolean {
@@ -122,7 +119,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         while (true) {
             val uRoot = root(u).withVersion()
             val vRoot = root(v).withVersion()
-            if (!rereadRoot(u, uRoot)) continue
+            if (!rereadRoot(u, uRoot) || !rereadRoot(v, vRoot)) continue
             return uRoot == vRoot
         }
     }

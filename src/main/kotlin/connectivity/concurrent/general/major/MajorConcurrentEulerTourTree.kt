@@ -1,6 +1,7 @@
 package connectivity.concurrent.general.major
 
 import connectivity.ConcurrentEdgeMap
+import connectivity.concurrent.tree.ConcurrentFineGrainedETTNode
 import connectivity.sequential.tree.TreeDynamicConnectivity
 import org.cliffc.high_scale_lib.NonBlockingHashMap
 import java.lang.Exception
@@ -117,23 +118,18 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         if (u == v) return true
 
         while (true) {
-            val uRoot = root(u).withVersion()
-            val vRoot = root(v).withVersion()
-            if (!rereadRoot(u, uRoot) || !rereadRoot(v, vRoot)) continue
-            return uRoot == vRoot
+            val uRoot = root(u)
+            val uRootVersion = uRoot.version
+            val vRoot = root(v)
+            val vRootVersion = vRoot.version
+            if (!rereadRoot(u, uRoot, uRootVersion)) continue
+            if (vRoot != uRoot) return false
+            if (!rereadRoot(v, vRoot, vRootVersion)) continue
+            return true
         }
     }
 
-    fun connectedSimple(u: Int, v: Int): Boolean {
-        if (u == v) return true
-
-        val uRoot = root(u)
-        val vRoot = root(v)
-
-        return uRoot === vRoot
-    }
-
-    internal fun connectedSimple(u: Int, v: Int, additionalRoot: Node?): Boolean {
+    internal fun connectedSimple(u: Int, v: Int, additionalRoot: Node? = null): Boolean {
         if (u == v) return true
 
         val uRoot = root(u, additionalRoot)
@@ -144,8 +140,9 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
     fun state() = Pair(edgeToNode.keys, edgeToNode.values.map { it.priority }) // the tree is determined by (value, priority) pairs
 
-    private fun rereadRoot(v: Int, was: Pair<Node, Int>): Boolean {
-        return root(v).withVersion() == was
+    private inline fun rereadRoot(v: Int, wasRoot: Node, wasVersion: Int): Boolean {
+        val root = root(v)
+        return wasRoot === root && wasVersion == root.version
     }
 
     fun root(v : Int): Node = root(nodes[v])

@@ -1,6 +1,5 @@
 package connectivity.concurrent.tree
 
-import connectivity.ConcurrentEdgeMap
 import connectivity.SequentialEdgeMap
 import connectivity.SequentialEdgeSet
 import connectivity.sequential.tree.TreeDynamicConnectivity
@@ -120,11 +119,14 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         if (u == v) return true
 
         while (true) {
-            val uRoot = rootReader(u).withVersion()
-            val vRoot = rootReader(v).withVersion()
-            if (!rereadRoot(u, uRoot) ||
-                !rereadRoot(v, vRoot)) continue
-            return uRoot == vRoot
+            val uRoot = root(u)
+            val uRootVersion = uRoot.version
+            val vRoot = root(v)
+            val vRootVersion = vRoot.version
+            if (!rereadRoot(u, uRoot, uRootVersion)) continue
+            if (vRoot != uRoot) return false
+            if (!rereadRoot(v, vRoot, vRootVersion)) continue
+            return true
         }
     }
 
@@ -139,11 +141,10 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
     fun state() = Pair(edgeToNode.keys, edgeToNode.values.map { it.priority }) // the tree is determined by (value, priority) pairs
 
-    private fun rereadRoot(v: Int, was: Pair<ConcurrentETTNode, Int>): Boolean {
-        return rootReader(v).withVersion() == was
+    private inline fun rereadRoot(v: Int, wasRoot: ConcurrentETTNode, wasVersion: Int): Boolean {
+        val root = root(v)
+        return wasRoot === root && wasVersion == root.version
     }
-
-    private fun rootReader(v: Int): ConcurrentETTNode = rootReader(nodes[v])
 
     fun root(v : Int): ConcurrentETTNode = root(nodes[v])
 
@@ -155,16 +156,6 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         var node = n
         var parent = node.parent
         while (parent != null && node !== additionalRoot) {
-            node = parent
-            parent = node.parent
-        }
-        return node
-    }
-
-    private fun rootReader(n: ConcurrentETTNode): ConcurrentETTNode {
-        var node = n
-        var parent = node.parent
-        while (parent != null) {
             node = parent
             parent = node.parent
         }

@@ -1,22 +1,24 @@
 package connectivity.concurrent.general.major
 
+import connectivity.Edge
+import connectivity.NO_EDGE
 import java.util.concurrent.atomic.AtomicReference
 
-class MajorQueue<T> {
-    private val dummy = MajorQueueNode<T>(AtomicReference())
+class MajorQueue {
+    private val dummy = MajorQueueNode(AtomicReference())
     @Volatile
     private var head = dummy // no need in AtomicReference, because there is only one thread that can read
-    private var tail: AtomicReference<MajorQueueNode<T>> = AtomicReference(dummy)
+    private var tail: AtomicReference<MajorQueueNode> = AtomicReference(dummy)
 
-    fun pop(): T? {
-        val r = head.next.get() ?: return null
-        head = r.second
-        return r.first
+    fun pop(): Edge {
+        val r = head.next.get() ?: return NO_EDGE
+        head = r.node
+        return r.edge
     }
 
-    fun push(value: T) { // Michael-Scott implementation
-        val newNode = MajorQueueNode<T>(AtomicReference())
-        val newNext = Pair(value, newNode)
+    fun push(value: Edge) { // Michael-Scott implementation
+        val newNode = MajorQueueNode(AtomicReference())
+        val newNext = MajorQueueContent(value, newNode)
         while (true) {
             val currentTail = tail.get()
             val tailNext = currentTail.next.get()
@@ -28,7 +30,7 @@ class MajorQueue<T> {
                         return
                     }
                 } else {
-                    tail.compareAndSet(currentTail, tailNext.second)
+                    tail.compareAndSet(currentTail, tailNext.node)
                 }
             }
         }
@@ -37,4 +39,6 @@ class MajorQueue<T> {
     fun isNotEmpty() = head.next.get() != null
 }
 
-class MajorQueueNode<T>(val next: AtomicReference<Pair<T, MajorQueueNode<T>>>)
+private class MajorQueueNode(val next: AtomicReference<MajorQueueContent>)
+
+private class MajorQueueContent(val edge: Long, val node: MajorQueueNode)

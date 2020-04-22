@@ -1,25 +1,22 @@
 package connectivity.concurrent.general.major
 
 import connectivity.ConcurrentEdgeMap
-import connectivity.concurrent.tree.ConcurrentFineGrainedETTNode
+import connectivity.Edge
+import connectivity.NO_EDGE
+import connectivity.makeDirectedEdge
 import connectivity.sequential.tree.TreeDynamicConnectivity
-import org.cliffc.high_scale_lib.NonBlockingHashMap
-import java.lang.Exception
-import java.util.*
-import kotlin.collections.HashSet
-import kotlin.random.Random
 
-class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>? = null) {
+class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
     var parent: Node? = null
     var left: Node? = null
     var right: Node? = null
     var size: Int = 1
-    val nonTreeEdges: MajorQueue<Pair<Int, Int>>? = if (isVertex) MajorQueue() else null // for storing non-tree edges in general case
+    val nonTreeEdges: MajorQueue? = if (isVertex) MajorQueue() else null // for storing non-tree edges in general case
     @Volatile
     var hasNonTreeEdges: Boolean = false // for traversal
-    var currentLevelTreeEdge: Pair<Int, Int>? = treeEdge
-    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != null
+    var currentLevelTreeEdge: Edge = treeEdge
+    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
     @Volatile
     var version = 0
     @Volatile
@@ -34,8 +31,9 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
-        // priorities for nodes are less so that roots will be always vertices, not nodes
-        val priorities = List(size) { it }.shuffled(random)
+        // priorities for nodes are less so that roots will be always vertices, not edges
+        val priorities = MutableList(size) { it }
+        priorities.shuffle(random)
         nodes = Array(size) { Node(priorities[it]) }
     }
 
@@ -53,10 +51,6 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val vRoot = root(vNode, additionalRoot)
 
         // linearization point
-        if (uRoot == vRoot) {
-            println("!")
-        }
-
         if (uRoot.priority < vRoot.priority) {
             vRoot.parent = uRoot
             uRoot.version++
@@ -65,13 +59,25 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             vRoot.version++
         }
 
-        val uv = Node(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(u, v) else null)
-        val vu = Node(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(v, u) else null)
+        val uvEdge = makeDirectedEdge(u, v)
+        val vuEdge = makeDirectedEdge(v, u)
 
-        edgeToNode[Pair(u, v)] = uv
-        edgeToNode[Pair(v, u)] = vu
-        // add uv and vu edges and merge tours
-        merge(merge(uRoot, uv), merge(vRoot, vu))
+        // create nodes corresponding to two directed copies of the new edge
+        val uvNode = Node(
+            size + random.nextInt(10 * size),
+            false,
+            if (isCurrentLevelTreeEdge) uvEdge else NO_EDGE
+        )
+        val vuNode = Node(
+            size + random.nextInt(10 * size),
+            false,
+            if (isCurrentLevelTreeEdge) vuEdge else NO_EDGE
+        )
+        edgeToNode[uvEdge] = uvNode
+        edgeToNode[vuEdge] = vuNode
+
+        // merge (u,v), (v,u) edges and tours
+        merge(merge(uRoot, uvNode), merge(vRoot, vuNode))
     }
 
     override fun removeEdge(u: Int, v: Int) {
@@ -79,11 +85,15 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 
     fun removeEdge(u: Int, v: Int, doSplit: Boolean): Pair<Node, Node> {
-        val edgeNode = edgeToNode[Pair(u, v)]!!
-        val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
+        val uvEdge = makeDirectedEdge(u, v)
+        val vuEdge = makeDirectedEdge(v, u)
+
+        val edgeNode = edgeToNode[uvEdge]!!
+        val reverseEdgeNode = edgeToNode[vuEdge]!!
+
+        // get positions of the edge nodes in the tree
         var leftPosition = edgeNode.position()
         var rightPosition = reverseEdgeNode.position()
-
         if (leftPosition > rightPosition) {
             val tmp = rightPosition
             rightPosition = leftPosition
@@ -92,26 +102,26 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
         val root = root(u)
         // cut the [leftPosition, rightPosition] segment out of the tree
-        var div1 = split(root, rightPosition + 1)
-        div1 = Pair(split(div1.first, rightPosition).first, div1.second) // forget (v, u)
+        val div1 = split(root, rightPosition + 1)
+        div1.first = split(div1.first, rightPosition).first // forget (v, u)
         val div2 = split(div1.first, leftPosition)
-
-        val component1 = merge(div2.first, div1.second)
-        val component2 = split(div2.second, 1).second // forget (u, v)
+        val component1 = merge(div2.first, div1.second)!!
+        val component2 = split(div2.second, 1).second!! // forget (u, v)
 
         if (doSplit) {
             // linearization point
             // one of them was already null and the other lead to another tree
-            component1!!.parent = null
-            component2!!.parent = null
+            component1.parent = null
+            component2.parent = null
             component1.version.inc()
             component2.version.inc()
         }
 
-        edgeToNode.remove(Pair(u, v))
-        edgeToNode.remove(Pair(v, u))
+        // remove two directed copies of the deleted edge
+        edgeToNode.remove(uvEdge)
+        edgeToNode.remove(vuEdge)
 
-        return Pair(component1!!, component2!!)
+        return Pair(component1, component2)
     }
 
     override fun connected(u: Int, v: Int): Boolean {
@@ -161,20 +171,22 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         return node
     }
 
-    // [prefix node suffix] -> [node suffix prefix] (rotation)
+    // [prefix, node, suffix] -> [node, suffix, prefix] (rotation)
     private fun makeFirst(node: Node, additionalRoot: Node?) {
         val root = root(node, additionalRoot)
         val position = node.position(additionalRoot)
-        val div = split(root, position) // ([A], [node B])
+        val div = split(root, position) // ([prefix], [node, suffix])
         merge(div.second, div.first)
     }
 
+    private class SplitResults(var first: Node?, var second: Node?)
+
     /**
-     * Note, that the parent for the second tree will be same.
+     * Splits the tree into two.
      * [sizeLeft] is the number of nodes that should go to the left tree
      */
-    private fun split(node: Node?, sizeLeft: Int): Pair<Node?, Node?> {
-        if (node == null) return Pair(null, null)
+    private fun split(node: Node?, sizeLeft: Int): SplitResults {
+        if (node == null) return SplitResults(null, null)
 
         val toTheLeft = 1 + (node.left?.size ?: 0)
         return if (toTheLeft <= sizeLeft) {
@@ -183,14 +195,16 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             node.right = division.first
             node.right?.parent = node
             node.recalculate()
-            Pair(node, division.second)
+            division.first = node
+            division
         } else {
             // node goes to the right part
             val division = split(node.left, sizeLeft)
             node.left = division.second
             node.left?.parent = node
             node.recalculate()
-            Pair(division.first, node)
+            division.second = node
+            division
         }
     }
 
@@ -223,11 +237,9 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         }
         return position
     }
-
-    private fun Node.withVersion() = Pair(this, this.version)
 }
 
-internal fun Node.recalculate() {
+internal inline fun Node.recalculate() {
     size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
     val shouldHaveNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
     hasNonTreeEdges = shouldHaveNonTreeEdges
@@ -237,7 +249,7 @@ internal fun Node.recalculate() {
         if (shouldHaveNonTreeEdges2)
             hasNonTreeEdges = true
     }
-    hasCurrentLevelTreeEdges = currentLevelTreeEdge != null || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+    hasCurrentLevelTreeEdges = currentLevelTreeEdge != NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
 }
 
 internal fun Node.recalculateUp() {
@@ -245,7 +257,7 @@ internal fun Node.recalculateUp() {
     parent?.recalculateUp()
 }
 
-internal fun Node.update(body: Node.() -> Unit) {
+internal inline fun Node.update(body: Node.() -> Unit) {
     body()
     recalculateUp()
 }
@@ -255,7 +267,7 @@ internal fun Node.recalculateUpNonTreeEdges() {
     parent?.recalculateUpNonTreeEdges()
 }
 
-internal fun Node.updateNonTreeEdges(body: Node.() -> Unit) {
+internal inline fun Node.updateNonTreeEdges(body: Node.() -> Unit) {
     body()
     recalculateUpNonTreeEdges()
 }

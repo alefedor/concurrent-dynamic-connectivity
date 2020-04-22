@@ -1,6 +1,7 @@
 package connectivity.concurrent.general
 
-import connectivity.ConcurrentEdgeMap
+import connectivity.*
+import connectivity.NO_EDGE
 import connectivity.concurrent.tree.ReadWriteFineGrainedETTNode
 import connectivity.concurrent.tree.ReadWriteFineGrainedEulerTourTree
 import connectivity.concurrent.tree.recalculate
@@ -25,33 +26,34 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
     }
 
     override fun addEdge(u: Int, v: Int) = lockComponentsWrite(u, v) {
-        val edge = Pair(min(u, v), max(u, v))
+        val edge = makeEdge(u, v)
         ranks[edge] = 0
         if (!levels[0].connected(u, v)) {
             levels[0].addEdge(u, v)
         } else {
             levels[0].node(u).update {
-                nonTreeEdges.add(edge)
+                nonTreeEdges!!.add(edge)
             }
             levels[0].node(v).update {
-                nonTreeEdges.add(edge)
+                nonTreeEdges!!.add(edge)
             }
         }
     }
 
     override fun removeEdge(u: Int, v: Int) = lockComponentsWrite(u, v) {
-        val edge = Pair(min(u, v), max(u, v))
-        val rank = ranks[edge] ?: return
+        val edge = makeEdge(u, v)
+        val rank = ranks[edge]!!
         ranks.remove(edge)
         val level = levels[rank]
-        val isNonTreeEdge = level.node(u).nonTreeEdges.contains(edge)
 
+        val isNonTreeEdge = level.node(u).nonTreeEdges!!.contains(edge)
         if (isNonTreeEdge) {
+            // just delete the non-tree edge
             level.node(u).update {
-                nonTreeEdges.remove(edge)
+                nonTreeEdges!!.remove(edge)
             }
             level.node(v).update {
-                nonTreeEdges.remove(edge)
+                nonTreeEdges!!.remove(edge)
             }
             return
         }
@@ -64,23 +66,23 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
             var uRoot = searchLevel.root(u)
             var vRoot = searchLevel.root(v)
 
+            // swap components if needed, so that the uRoot component is smaller
             if (uRoot.size > vRoot.size) {
                 val tmp = uRoot
                 uRoot = vRoot
                 vRoot = tmp
             }
 
-            // promote tree edges for less component
-
+            // promote tree edges for the lesser component
             increaseTreeEdgesRank(uRoot, u, v, r)
             val replacementEdge = findReplacement(uRoot, r)
-            if (replacementEdge != null) {
+            if (replacementEdge != NO_EDGE) {
+                // if a replacement is found, then add it to all levels <= r
                 for (i in 0..r)
-                    levels[i].addEdge(replacementEdge.first, replacementEdge.second, i == r)
+                    levels[i].addEdge(replacementEdge.u(), replacementEdge.v(), i == r)
                 break
             }
         }
-
     }
 
     override fun connected(u: Int, v: Int): Boolean {
@@ -96,71 +98,79 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
     private fun increaseTreeEdgesRank(node: ReadWriteFineGrainedETTNode, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
 
-        node.currentLevelTreeEdge?.let {
-            node.currentLevelTreeEdge = null
-            if (it.first < it.second) { // not to promote the same edge twice
-                levels[rank + 1].addEdge(it.first, it.second)
-                ranks[it] = rank + 1
+        val treeEdge = node.currentLevelTreeEdge
+        if (treeEdge != NO_EDGE) {
+            node.currentLevelTreeEdge = NO_EDGE
+            if (treeEdge.u() < treeEdge.v()) { // not to promote the same edge twice
+                levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
+                ranks[treeEdge] = rank + 1
             }
         }
 
+        // recursive call for children
         node.left?.let {
             increaseTreeEdgesRank(it, u, v, rank)
         }
-
         node.right?.let {
             increaseTreeEdgesRank(it, u, v, rank)
         }
 
+        // recalculate flags after updates
         node.recalculate()
     }
 
-    private fun findReplacement(node: ReadWriteFineGrainedETTNode, rank: Int): Pair<Int, Int>? {
-        if (!node.hasNonTreeEdges) return null
+    private fun findReplacement(node: ReadWriteFineGrainedETTNode, rank: Int): Edge {
+        if (!node.hasNonTreeEdges) return NO_EDGE
 
-        val iterator = node.nonTreeEdges.iterator()
+        var result: Edge = NO_EDGE
+        val level = levels[rank]
 
-        var result: Pair<Int, Int>? = null
+        node.nonTreeEdges?.let {
+            val iterator = it.iterator()
 
-        while (iterator.hasNext()) {
-            val edge = iterator.next()
-            val firstNode = levels[rank].node(edge.first)
-            if (firstNode != node)
-                firstNode.update {
-                    nonTreeEdges.remove(edge)
-                }
-            else
-                levels[rank].node(edge.second).update {
-                    nonTreeEdges.remove(edge)
-                }
-            iterator.remove()
+            while (iterator.hasNext()) {
+                val edge = iterator.nextLong()
 
-            if (!levels[rank].connected(edge.first, edge.second)) {
-                // is replacement
-                result = edge
-                break
-            } else {
-                // promote non-tree edge
-                levels[rank + 1].node(edge.first).update {
-                    nonTreeEdges.add(edge)
+                // remove edge from another node too
+                val firstNode = level.node(edge.u())
+                if (firstNode != node)
+                    firstNode.update {
+                        nonTreeEdges!!.remove(edge)
+                    }
+                else
+                    level.node(edge.v()).update {
+                        nonTreeEdges!!.remove(edge)
+                    }
+                iterator.remove()
+
+                if (!level.connected(edge.u(), edge.v())) {
+                    // is a replacement
+                    result = edge
+                    break
+                } else {
+                    // promote non-tree edge
+                    levels[rank + 1].node(edge.u()).update {
+                        nonTreeEdges!!.add(edge)
+                    }
+                    levels[rank + 1].node(edge.v()).update {
+                        nonTreeEdges!!.add(edge)
+                    }
+                    ranks[edge] = rank + 1
                 }
-                levels[rank + 1].node(edge.second).update {
-                    nonTreeEdges.add(edge)
-                }
-                ranks[edge] = rank + 1
             }
         }
 
-        if (result == null) {
-            val leftResult = node.left?.let { findReplacement(it, rank) }
-            if (leftResult != null)
+        if (result == NO_EDGE) {
+            val leftResult = node.left?.let { findReplacement(it, rank) } ?: NO_EDGE
+            if (leftResult != NO_EDGE)
                 result = leftResult
         }
-        if (result == null) {
-            val rightResult = node.right?.let { findReplacement(it, rank) }
-            if (rightResult != null)
+        if (result == NO_EDGE) {
+            val rightResult = node.right?.let { findReplacement(it, rank) } ?: NO_EDGE
+            if (rightResult != NO_EDGE)
                 result = rightResult
         }
+        // recalculate flags after updates
         node.recalculate()
         return result
     }
@@ -170,6 +180,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
             val uRoot = root(u)
             val vRoot = root(v)
 
+            // lock the component with lesser priority first to avoid deadlock
             if (uRoot.priority < vRoot.priority) {
                 uRoot.lock!!.readLock().lock()
                 vRoot.lock!!.readLock().lock()
@@ -195,6 +206,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
             val uRoot = root(u)
             val vRoot = root(v)
 
+            // lock the component with lesser priority first to avoid deadlock
             if (uRoot.priority < vRoot.priority) {
                 uRoot.lock!!.writeLock().lock()
                 vRoot.lock!!.writeLock().lock()

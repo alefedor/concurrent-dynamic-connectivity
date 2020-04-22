@@ -1,25 +1,16 @@
 package connectivity.concurrent.general.major
 
+import connectivity.*
 import connectivity.sequential.general.DynamicConnectivity
-import org.cliffc.high_scale_lib.NonBlockingHashMap
-import java.lang.Exception
 import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
 import kotlin.math.min
 
-val log = StringBuilder()
-
-inline fun StringBuilder.synchronizedAppendln(text: String) {
-    /*synchronized(this) {
-        appendln(text)
-    }*/
-}
-
 class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<MajorConcurrentEulerTourTree>
-    private val statuses = NonBlockingHashMap<Pair<Int, Int>, AtomicReference<EdgeStatus>>()
-    private val ranks = NonBlockingHashMap<Pair<Int, Int>, Int>()
+    private val statuses = ConcurrentEdgeMap<AtomicReference<EdgeStatus>>()
+    private val ranks = ConcurrentEdgeMap<Int>()
 
     init {
         var levelNumber = 1
@@ -32,28 +23,29 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     }
 
     override fun addEdge(u: Int, v: Int) {
-        val edge = Pair(min(u, v), max(u, v))
+        val edge = makeEdge(u, v)
         ranks[edge] = 0
         val status = AtomicReference(EdgeStatus.INITIAL)
         statuses[edge] = status
         while (true) {
             val currentStatus = status.get()
-            if (currentStatus != EdgeStatus.INITIAL && currentStatus != EdgeStatus.FAILED)
+            if (currentStatus != EdgeStatus.INITIAL && currentStatus != EdgeStatus.SPECIAL)
                 return // someone already finished the edge addition
             if (!connected(u, v)) {
-                if (currentStatus != EdgeStatus.FAILED) {
-                    if (!status.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.FAILED)) {
-                        if (status.get() != EdgeStatus.FAILED)
+                // change status to SPECIAL before locking
+                if (currentStatus != EdgeStatus.SPECIAL) {
+                    if (!status.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.SPECIAL)) {
+                        if (status.get() != EdgeStatus.SPECIAL)
                             return // someone already finished the edge addition
                     }
                 }
-                log.synchronizedAppendln("blocking add")
                 lockComponents(u, v) {
                     doAddEdge(u, v)
                     return
                 }
             } else {
-                if (currentStatus == EdgeStatus.FAILED)
+                // change status to INITIAL before non-blocking addition
+                if (currentStatus == EdgeStatus.SPECIAL)
                     status.set(EdgeStatus.INITIAL)
                 if (tryNonBlockingAddEdge(u, v))
                     return
@@ -62,27 +54,26 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     }
 
     fun doAddEdge(u: Int, v: Int) { // under lock
-        val edge = Pair(min(u, v), max(u, v))
+        val edge = makeEdge(u, v)
         if (!levels[0].connectedSimple(u, v)) {
             levels[0].addEdge(u, v)
-            log.synchronizedAppendln("tree edge $u $v")
+            // just set, because status is SPECIAL
             statuses[edge]!!.set(EdgeStatus.TREE_EDGE)
         } else {
-            log.synchronizedAppendln("non-tree edge $u $v")
             levels[0].node(u).updateNonTreeEdges {
                 nonTreeEdges!!.push(edge)
             }
             levels[0].node(v).updateNonTreeEdges {
                 nonTreeEdges!!.push(edge)
             }
+            // just set, because status is SPECIAL
             statuses[edge]!!.set(EdgeStatus.NON_TREE_EDGE)
         }
     }
 
     fun tryNonBlockingAddEdge(u: Int, v: Int): Boolean {
-        val edge = Pair(min(u, v), max(u, v))
+        val edge = makeEdge(u, v)
         val status = statuses[edge]!!
-        log.synchronizedAppendln(status.get().toString())
         val level = levels[0]
         level.node(u).updateNonTreeEdges {
             nonTreeEdges!!.push(edge)
@@ -91,48 +82,39 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             nonTreeEdges!!.push(edge)
         }
         val root = level.root(u)
-        log.synchronizedAppendln("read information from ${root}")
+        // check whether there is a concurrent edge addition
         val removeEdgeOperation = root.removeEdgeOperation
-        if (removeEdgeOperation == null) {
-            log.synchronizedAppendln("there is no parallel removeEdge operation")
-        } else {
-            log.synchronizedAppendln("parallel remove edge operation")
-        }
         if (removeEdgeOperation != null) {
+            // simple reads, because the only interesting case is when the replacement search
+            // is not finished before the end of this code
             if (level.connectedSimple(u, v) && !level.connectedSimple(u, v, removeEdgeOperation.additionalRoot)) {
                 // can be a replacement
-                log.synchronizedAppendln("can be a replacement")
-                if (status.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.FAILED)) {
-                    // self fail so that no one could add
-                    if (removeEdgeOperation.replacement.compareAndSet(null, edge)) {
-                        log.synchronizedAppendln("concurrent add found a replacement edge (${edge.first}, ${edge.second})")
+                if (status.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.SPECIAL)) {
+                    // self fail, so that no one could add the edge
+                    if (removeEdgeOperation.replacement.compareAndSet(NO_EDGE, edge))
                         return true
-                    }
                     return false
                 }
             }
         }
-        if (connected(u, v) && status.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.NON_TREE_EDGE)) {
-            log.synchronizedAppendln("non-blocking add self")
+        // try to finish non-blocking addition
+        if (connected(u, v) && status.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.NON_TREE_EDGE))
             return true
-        }
         return false
     }
 
     override fun removeEdge(u: Int, v: Int) {
         while (true) {
-            val edge = Pair(min(u, v), max(u, v))
+            val edge = makeEdge(u, v)
             val status = statuses[edge]!!
             val currentStatus = status.get()
             if (currentStatus == EdgeStatus.TREE_EDGE) {
-                log.synchronizedAppendln("blocking remove (${edge.first}, ${edge.second})")
                 lockComponents(u, v) {
                     doRemoveEdge(u, v)
                     return
                 }
             } else {
-                if (currentStatus == EdgeStatus.FAILED) continue // active wait until the edge becomes TREE_EDGE
-                log.synchronizedAppendln("non-blocking remove (${edge.first}, ${edge.second})")
+                if (currentStatus == EdgeStatus.SPECIAL) continue // active wait until the edge becomes TREE_EDGE
                 require(currentStatus == EdgeStatus.NON_TREE_EDGE) // can remove edge
                 if (status.compareAndSet(EdgeStatus.NON_TREE_EDGE, EdgeStatus.REMOVED))
                     return
@@ -142,13 +124,15 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     }
 
     private fun doRemoveEdge(u: Int, v: Int) {
-        val edge = Pair(min(u, v), max(u, v))
-        val rank = ranks[edge] ?: throw IllegalStateException()
+        val edge = makeEdge(u, v)
+        val rank = ranks[edge]!!
         ranks.remove(edge)
 
         for (r in rank downTo 0) {
+            // remove edge, but keep the parent link
             var (uRoot, vRoot) = levels[r].removeEdge(u, v, false)
 
+            // swap components if needed, so that the uRoot component is smaller
             if (uRoot.size > vRoot.size) {
                 val tmp = uRoot
                 uRoot = vRoot
@@ -158,30 +142,29 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             val lowerRoot = if (uRoot.parent != null) uRoot else vRoot
 
             if (r == 0) {
+                // concurrent conflicts happen only on level 0
                 // publish information about the operation
                 val commonRoot = if (uRoot.parent != null) vRoot else uRoot
                 val currentOperation = RemovalOperationInfo(u, v, lowerRoot)
                 commonRoot.removeEdgeOperation = currentOperation
-                log.synchronizedAppendln("Published information to ${commonRoot}, other ${lowerRoot}")
 
                 // promote tree edges for less component
                 increaseTreeEdgesRank(uRoot, u, v, r)
                 findReplacement0(uRoot, lowerRoot, currentOperation)
-                val replacementEdge = run {
+                val replacementEdge: Edge = run {
                     val result = currentOperation.replacement.get()
-                    if (result == null) {
+                    if (result == NO_EDGE) {
                         // if is null then remove the opportunity for other threads to add a replacement
-                        if (currentOperation.replacement.compareAndSet(null, edge)) { // just try to CAS with something not null
-                            return@run null
+                        if (currentOperation.replacement.compareAndSet(NO_EDGE, 0L)) { // just try to CAS with something not NO_EDGE
+                            return@run NO_EDGE
                         }  else {
+                            // the failed CAS means that someone found a replacement
                             return@run currentOperation.replacement.get()
                         }
                     }
                     result
                 }
-                if (replacementEdge != null) {
-                    log.synchronizedAppendln("found a replacement")
-                    log.synchronizedAppendln("replacement: ${replacementEdge.first} ${replacementEdge.second}")
+                if (replacementEdge != NO_EDGE) {
                     statuses[replacementEdge]!!.set(EdgeStatus.TREE_EDGE)
                     for (i in r downTo 0) {
                         val lr = if (i == r) {
@@ -191,27 +174,23 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                             if (ur.parent != null) ur else vr
                         }
 
-                        levels[i].addEdge(replacementEdge.first, replacementEdge.second, i == r, lr)
+                        levels[i].addEdge(replacementEdge.u(), replacementEdge.v(), i == r, lr)
                     }
                     commonRoot.removeEdgeOperation = null
                     break
                 } else {
-                    log.synchronizedAppendln("did not find a replacement")
                     // linearization point, do an actual split on this level
                     uRoot.parent = null
                     vRoot.parent = null
                     uRoot.version.inc()
                     vRoot.version.inc()
                 }
-
                 commonRoot.removeEdgeOperation = null
             } else {
                 // promote tree edges for less component
                 increaseTreeEdgesRank(uRoot, u, v, r)
                 val replacementEdge = findReplacement(uRoot, r, lowerRoot)
-                if (replacementEdge != null) {
-                    log.synchronizedAppendln("found a replacement")
-                    log.synchronizedAppendln("replacement: ${replacementEdge.first} ${replacementEdge.second}")
+                if (replacementEdge != NO_EDGE) {
                     statuses[replacementEdge]!!.set(EdgeStatus.TREE_EDGE)
                     for (i in r downTo 0) {
                         val lr = if (i == r) {
@@ -221,12 +200,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                             if (ur.parent != null) ur else vr
                         }
 
-                        levels[i].addEdge(replacementEdge.first, replacementEdge.second, i == r, lr)
+                        levels[i].addEdge(replacementEdge.u(), replacementEdge.v(), i == r, lr)
                     }
                     break
                 } else {
-                    log.synchronizedAppendln("did not find a replacement")
-
                     // linearization point, do an actual split on this level
                     uRoot.parent = null
                     vRoot.parent = null
@@ -242,31 +219,32 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private fun increaseTreeEdgesRank(node: Node, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
 
-        node.currentLevelTreeEdge?.let {
-            node.currentLevelTreeEdge = null
-            if (it.first < it.second) { // not to promote the same edge twice
-                levels[rank + 1].addEdge(it.first, it.second)
-                ranks[it] = rank + 1
+        val treeEdge = node.currentLevelTreeEdge
+        if (treeEdge != NO_EDGE) {
+            node.currentLevelTreeEdge = NO_EDGE
+            if (treeEdge.u() < treeEdge.v()) { // not to promote the same edge twice
+                levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
+                ranks[treeEdge] = rank + 1
             }
         }
 
+        // recursive call for children
         node.left?.let {
             increaseTreeEdgesRank(it, u, v, rank)
         }
-
         node.right?.let {
             increaseTreeEdgesRank(it, u, v, rank)
         }
-
+        // recalculate flags after updates
         node.recalculate()
     }
 
-    private fun findReplacement(node: Node, rank: Int, additionalRoot: Node): Pair<Int, Int>? {
-        if (!node.hasNonTreeEdges) return null
+    private fun findReplacement(node: Node, rank: Int, additionalRoot: Node): Edge {
+        if (!node.hasNonTreeEdges) return NO_EDGE
 
         val nonTreeEdges = node.nonTreeEdges
 
-        var result: Pair<Int, Int>? = null
+        var result: Edge = NO_EDGE
 
         nonTreeEdges?.let {
             while (true) {
@@ -276,7 +254,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 val status = statuses[edge]!!
                 if (status.get() != EdgeStatus.NON_TREE_EDGE) continue // just remove deleted edges and continue
 
-                if (!levels[rank].connectedSimple(edge.first, edge.second, additionalRoot)) {
+                if (!levels[rank].connectedSimple(edge.u(), edge.v(), additionalRoot)) {
                     // is replacement
                     if (status.compareAndSet(EdgeStatus.NON_TREE_EDGE, EdgeStatus.TREE_EDGE)) {
                         result = edge
@@ -286,10 +264,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     break
                 } else {
                     // promote non-tree edge
-                    levels[rank + 1].node(edge.first).updateNonTreeEdges {
+                    levels[rank + 1].node(edge.u()).updateNonTreeEdges {
                         this.nonTreeEdges!!.push(edge)
                     }
-                    levels[rank + 1].node(edge.second).updateNonTreeEdges {
+                    levels[rank + 1].node(edge.v()).updateNonTreeEdges {
                         this.nonTreeEdges!!.push(edge)
                     }
                     ranks[edge] = rank + 1
@@ -297,16 +275,17 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             }
         }
 
-        if (result == null) {
+        if (result == NO_EDGE) {
             val leftResult = node.left?.let { findReplacement(it, rank, additionalRoot) }
             if (leftResult != null)
                 result = leftResult
         }
-        if (result == null) {
+        if (result == NO_EDGE) {
             val rightResult = node.right?.let { findReplacement(it, rank, additionalRoot) }
             if (rightResult != null)
                 result = rightResult
         }
+        // recalculate flags after updates
         node.recalculate()
         return result
     }
@@ -321,14 +300,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         nonTreeEdges?.let {
             mainLoop@while (true) {
                 val edge = nonTreeEdges.pop() ?: break
-                log.synchronizedAppendln("traversed an edge (${edge.first}, ${edge.second})")
                 val edgeRank = ranks[edge] ?: continue // skip already deleted edges
                 if (edgeRank != 0) continue // check that rank is correct, because we do not delete twin edges
-                log.synchronizedAppendln(statuses[edge]!!.get().toString())
                 when (statuses[edge]!!.get()) {
                     EdgeStatus.INITIAL -> {
                         // try to make a non-tree edge
-                        val (u, v) = edge
+                        val u = edge.u()
+                        val v = edge.v()
                         if (levels[0].connectedSimple(u, v)) {
                             if (levels[0].node(u) == node)
                                 levels[0].node(v).updateNonTreeEdges {
@@ -340,9 +318,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                                 }
                             statuses[edge]!!.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.NON_TREE_EDGE)
                             // one way or another the edge will be added by this point
-                            log.synchronizedAppendln("edge addition by a replacing thread (${edge.first}, ${edge.second})")
                         } else {
-                            if (statuses[edge]!!.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.FAILED)) {
+                            if (statuses[edge]!!.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.SPECIAL)) {
                                 // just skip
                                 continue@mainLoop
                             } else {
@@ -352,24 +329,23 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     }
                     EdgeStatus.TREE_EDGE -> continue@mainLoop // skip too
                     EdgeStatus.REMOVED -> continue@mainLoop // just remove
-                    EdgeStatus.FAILED -> continue@mainLoop
+                    EdgeStatus.SPECIAL -> continue@mainLoop
                 }
 
                 // is a non tree edge here, or maybe deleted
-                if (!levels[0].connectedSimple(edge.first, edge.second, additionalRoot)) {
+                if (!levels[0].connectedSimple(edge.u(), edge.v(), additionalRoot)) {
                     // is replacement
                     if (statuses[edge]!!.compareAndSet(EdgeStatus.NON_TREE_EDGE, EdgeStatus.TREE_EDGE)) {
-                        if (currentOperationInfo.replacement.compareAndSet(null, edge)) {
+                        if (currentOperationInfo.replacement.compareAndSet(NO_EDGE, edge)) {
                             // success
-                            log.synchronizedAppendln("remove found a replacement edge (${edge.first}, ${edge.second})")
                         } else {
-                            log.synchronizedAppendln("awkward situation (${edge.first}, ${edge.second}) (${currentOperationInfo.replacement.get().first}, ${currentOperationInfo.replacement.get().second})")
                             // an awkward situation.
-                            // found a replacement edge, made it tree, but somebody found an another one.
+                            // found a replacement edge, made it TREE, but someone found an another one.
                             // because the transition from TREE_EDGE to NON_TREE_EDGE is not allowed, we should use
-                            // our edge as a replacement and handle another edge
+                            // our edge as a replacement and add another edge as NON_TREE
                             val anotherEdge = currentOperationInfo.replacement.get()
-                            val (u, v) = anotherEdge
+                            val u = anotherEdge.u()
+                            val v = anotherEdge.v()
                             levels[0].node(u).updateNonTreeEdges {
                                 this.nonTreeEdges!!.push(anotherEdge)
                             }
@@ -387,10 +363,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     }
                 } else {
                     // promote non-tree edge
-                    levels[1].node(edge.first).updateNonTreeEdges {
+                    levels[1].node(edge.u()).updateNonTreeEdges {
                         this.nonTreeEdges!!.push(edge)
                     }
-                    levels[1].node(edge.second).updateNonTreeEdges {
+                    levels[1].node(edge.v()).updateNonTreeEdges {
                         this.nonTreeEdges!!.push(edge)
                     }
                     ranks[edge] = 1
@@ -402,7 +378,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             val foundReplacementInLeft = node.left?.let { findReplacement0(it, additionalRoot, currentOperationInfo) } ?: false
             foundReplacement = foundReplacementInLeft
         }
-        if (!foundReplacement && currentOperationInfo.replacement.get() == null) {
+        if (!foundReplacement) {
             val foundReplacementInRight = node.right?.let { findReplacement0(it, additionalRoot, currentOperationInfo) } ?: false
             foundReplacement = foundReplacementInRight
         }
@@ -410,14 +386,17 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         return foundReplacement
     }
 
+    private fun root(u: Int): Node = levels[0].root(u)
+
     private inline fun lockComponents(a: Int, b: Int, body: () -> Unit) {
         var u = a
         var v = b
 
         while (true) {
-            var uRoot = levels[0].root(u)
-            var vRoot = levels[0].root(v)
+            var uRoot = root(u)
+            var vRoot = root(v)
 
+            // lock the component with lesser priority first to avoid deadlock
             if (uRoot.priority > vRoot.priority) {
                 val tmp = u
                 u = v
@@ -428,7 +407,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             }
             synchronized(uRoot) {
                 synchronized(vRoot) {
-                    if (uRoot == levels[0].root(u) && vRoot == levels[0].root(v)) {
+                    if (uRoot == root(u) && vRoot == root(v)) {
                         body()
                         return
                     }

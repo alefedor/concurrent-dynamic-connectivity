@@ -1,7 +1,13 @@
 package connectivity
 
-import org.cliffc.high_scale_lib.NonBlockingHashMap
+import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet
+import org.cliffc.high_scale_lib.NonBlockingHashMapLong
 
-typealias SequentialEdgeMap<T> = HashMap<Pair<Int, Int>, T>
-typealias ConcurrentEdgeMap<T> = NonBlockingHashMap<Pair<Int, Int>, T>
-typealias SequentialEdgeSet = HashSet<Pair<Int, Int>>
+typealias Edge = Long
+typealias SequentialEdgeMap<T> = Long2ReferenceOpenHashMap<T>
+typealias ConcurrentEdgeMap<T> = NonBlockingHashMapLong<T>
+typealias SequentialEdgeSet = LongOpenHashSet
+
+// -1 is used instead of null to avoid boxing
+internal const val NO_EDGE: Long = -1

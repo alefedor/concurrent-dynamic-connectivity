@@ -5,6 +5,6 @@ enum class EdgeStatus {
     TREE_EDGE,
     NON_TREE_EDGE,
     REMOVED,
-    FAILED
+    SPECIAL
 }
 

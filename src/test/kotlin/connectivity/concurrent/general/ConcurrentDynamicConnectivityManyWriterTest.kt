@@ -1,7 +1,6 @@
 package connectivity.concurrent.general
 
 import connectivity.concurrent.GeneralDynamicConnectivityMultipleWriterExecutionGenerator
-import connectivity.concurrent.general.major.log
 import connectivity.sequential.SlowConnectivity
 import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
@@ -77,10 +76,6 @@ class ConcurrentDynamicConnectivityManyWriterTest(dcp: ConcurrentGeneralDynamicC
     @Param(name = "a", gen = IntGen::class, conf = "0:${n2 - 1}")
     class LinCheckDynamicConnectivityConcurrentStressTest2 {
         private val dc = globalDcpConstructor.construct(n2)
-
-        init {
-            log.clear()
-        }
 
         @Operation
         fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {

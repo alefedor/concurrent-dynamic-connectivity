@@ -1,25 +1,22 @@
 package connectivity.concurrent.tree
 
-import connectivity.ConcurrentEdgeMap
-import connectivity.SequentialEdgeSet
+import connectivity.*
+import connectivity.NO_EDGE
 import connectivity.sequential.tree.TreeDynamicConnectivity
-import java.util.*
-import kotlin.collections.HashSet
-import kotlin.random.Random
 
-class FineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Pair<Int, Int>? = null) {
+class FineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
     var parent: FineGrainedETTNode? = null
     var left: FineGrainedETTNode? = null
     var right: FineGrainedETTNode? = null
     var size: Int = 1
-    val nonTreeEdges: MutableSet<Pair<Int, Int>> = if (isVertex) SequentialEdgeSet() else Collections.emptySet() // for storing non-tree edges in general case
+    val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet() else null // for storing non-tree edges in general case
     var hasNonTreeEdges: Boolean = false // for traversal
-    var currentLevelTreeEdge: Pair<Int, Int>? = treeEdge
-    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != null
+    var currentLevelTreeEdge: Edge = treeEdge
+    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
 }
 
-// Sequential version, but with concurrent map. Is not a correct concurrent ETT itself
+// Sequential version, but with concurrent map to allow fine-grained locking. Is not a correct concurrent ETT.
 class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<FineGrainedETTNode>
     private val edgeToNode = ConcurrentEdgeMap<FineGrainedETTNode>()
@@ -28,8 +25,9 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
-        // priorities for nodes are less so that roots will be always vertices, not nodes
-        val priorities = List(size) { it }.shuffled(random)
+        // priorities for nodes are less so that roots will be always vertices, not edges
+        val priorities = MutableList(size) { it }
+        priorities.shuffle(random)
         nodes = Array(size) { FineGrainedETTNode(priorities[it]) }
     }
 
@@ -46,22 +44,29 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val uRoot = root(uNode)
         val vRoot = root(vNode)
 
-        val uv = FineGrainedETTNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(u, v) else null)
-        val vu = FineGrainedETTNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) Pair(v, u) else null)
+        val uvEdge = makeDirectedEdge(u, v)
+        val vuEdge = makeDirectedEdge(v, u)
 
-        edgeToNode[Pair(u, v)] = uv
-        edgeToNode[Pair(v, u)] = vu
-        // add uv and vu edges and merge tours
-        merge(merge(uRoot, uv), merge(vRoot, vu))
+        // create nodes corresponding to two directed copies of the new edge
+        val uvNode = FineGrainedETTNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) uvEdge else NO_EDGE)
+        val vuNode = FineGrainedETTNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge) vuEdge else NO_EDGE)
+        edgeToNode[uvEdge] = uvNode
+        edgeToNode[vuEdge] = vuNode
+
+        // merge (u,v), (v,u) edges and tours
+        merge(merge(uRoot, uvNode), merge(vRoot, vuNode))
     }
 
     override fun removeEdge(u: Int, v: Int) {
-        val edgeNode = edgeToNode[Pair(u, v)]!!
-        val reverseEdgeNode = edgeToNode[Pair(v, u)]!!
+        val uvEdge = makeDirectedEdge(u, v)
+        val vuEdge = makeDirectedEdge(v, u)
 
+        val edgeNode = edgeToNode[uvEdge]!!
+        val reverseEdgeNode = edgeToNode[vuEdge]!!
+
+        // get positions of the edge nodes in the tree
         var leftPosition = edgeNode.position()
         var rightPosition = reverseEdgeNode.position()
-
         if (leftPosition > rightPosition) {
             val tmp = rightPosition
             rightPosition = leftPosition
@@ -71,17 +76,18 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val root = root(u)
         // cut the [leftPosition, rightPosition] segment out of the tree
         var div1 = split(root, rightPosition + 1)
-        div1 = Pair(split(div1.first, rightPosition).first, div1.second) // forget (v, u)
+        div1.first = split(div1.first, rightPosition).first // forget (v, u)
         val div2 = split(div1.first, leftPosition)
-
         val component1 = merge(div2.first, div1.second)
         val component2 = split(div2.second, 1).second // forget (u, v)
 
+        // roots should not have parents
         component1?.parent = null
         component2?.parent = null
 
-        edgeToNode.remove(Pair(u, v))
-        edgeToNode.remove(Pair(v, u))
+        // remove two directed copies of the deleted edge
+        edgeToNode.remove(uvEdge)
+        edgeToNode.remove(vuEdge)
     }
 
     override fun connected(u: Int, v: Int): Boolean = root(u) == root(v)
@@ -100,20 +106,22 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         return node
     }
 
-    // [prefix node suffix] -> [node suffix prefix] (rotation)
+    // [prefix, node, suffix] -> [node, suffix, prefix] (rotation)
     private fun makeFirst(node: FineGrainedETTNode) {
         val root = root(node)
         val position = node.position()
-        val div = split(root, position) // ([A], [node B])
+        val div = split(root, position) // ([prefix], [node, suffix])
         merge(div.second, div.first)
     }
 
+    private class SplitResults(var first: FineGrainedETTNode?, var second: FineGrainedETTNode?)
+
     /**
-     * Note, that the parent for the second tree will be same.
+     * Splits the tree into two.
      * [sizeLeft] is the number of nodes that should go to the left tree
      */
-    private fun split(node: FineGrainedETTNode?, sizeLeft: Int): Pair<FineGrainedETTNode?, FineGrainedETTNode?> {
-        if (node == null) return Pair(null, null)
+    private fun split(node: FineGrainedETTNode?, sizeLeft: Int): SplitResults {
+        if (node == null) return SplitResults(null, null)
 
         val toTheLeft = 1 + (node.left?.size ?: 0)
         return if (toTheLeft <= sizeLeft) {
@@ -122,14 +130,16 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             node.right = division.first
             node.right?.parent = node
             node.recalculate()
-            Pair(node, division.second)
+            division.first = node
+            division
         } else {
             // node goes to the right part
             val division = split(node.left, sizeLeft)
             node.left = division.second
             node.left?.parent = node
             node.recalculate()
-            Pair(division.first, node)
+            division.second = node
+            division
         }
     }
 
@@ -155,7 +165,7 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         var current = this
         while (true) {
             val parent = current.parent ?: break
-            if (current == parent.right)
+            if (current == parent.right) // is right child
                 position += 1 + (parent.left?.size ?: 0)
             current = parent
         }
@@ -163,10 +173,10 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 }
 
-internal fun FineGrainedETTNode.recalculate() {
+internal inline fun FineGrainedETTNode.recalculate() {
     size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
-    hasNonTreeEdges = nonTreeEdges.isNotEmpty() || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
-    hasCurrentLevelTreeEdges = currentLevelTreeEdge != null || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+    hasNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
+    hasCurrentLevelTreeEdges = currentLevelTreeEdge != NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
 }
 
 internal fun FineGrainedETTNode.recalculateUp() {
@@ -174,7 +184,7 @@ internal fun FineGrainedETTNode.recalculateUp() {
     parent?.recalculateUp()
 }
 
-internal fun FineGrainedETTNode.update(body: FineGrainedETTNode.() -> Unit) {
+internal inline fun FineGrainedETTNode.update(body: FineGrainedETTNode.() -> Unit) {
     body()
     recalculateUp()
 }

@@ -5,6 +5,7 @@ import connectivity.Edge
 import connectivity.NO_EDGE
 import connectivity.makeDirectedEdge
 import connectivity.sequential.tree.TreeDynamicConnectivity
+import kotlin.random.Random
 
 class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
@@ -26,7 +27,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE
 class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<Node>
     private val edgeToNode = ConcurrentEdgeMap<Node>()
-    private val random = java.util.Random(0)
+    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)

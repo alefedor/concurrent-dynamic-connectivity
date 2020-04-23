@@ -25,7 +25,7 @@ class ReadWriteFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, t
 class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<ReadWriteFineGrainedETTNode>
     private val edgeToNode = ConcurrentEdgeMap<ReadWriteFineGrainedETTNode>()
-    private val random = java.util.Random(0)
+    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)

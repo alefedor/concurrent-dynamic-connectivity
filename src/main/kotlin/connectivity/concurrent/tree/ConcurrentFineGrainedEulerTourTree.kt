@@ -26,7 +26,7 @@ class ConcurrentFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, 
 class ConcurrentFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<ConcurrentFineGrainedETTNode>
     private val edgeToNode = ConcurrentEdgeMap<ConcurrentFineGrainedETTNode>()
-    private val random = java.util.Random(0)
+    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)

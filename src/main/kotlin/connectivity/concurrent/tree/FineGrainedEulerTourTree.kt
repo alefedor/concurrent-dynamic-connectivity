@@ -3,6 +3,7 @@ package connectivity.concurrent.tree
 import connectivity.*
 import connectivity.NO_EDGE
 import connectivity.sequential.tree.TreeDynamicConnectivity
+import kotlin.random.Random
 
 class FineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
@@ -20,7 +21,7 @@ class FineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: 
 class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<FineGrainedETTNode>
     private val edgeToNode = ConcurrentEdgeMap<FineGrainedETTNode>()
-    private val random = java.util.Random(0)
+    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)

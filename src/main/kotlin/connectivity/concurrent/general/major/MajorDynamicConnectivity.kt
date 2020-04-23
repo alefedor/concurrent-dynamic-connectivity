@@ -248,7 +248,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
 
         nonTreeEdges?.let {
             while (true) {
-                val edge = nonTreeEdges.pop() ?: break
+                val edge = nonTreeEdges.pop()
+                if (edge == NO_EDGE) break
                 val edgeRank = ranks[edge] ?: continue // skip already deleted edges
                 if (edgeRank != rank) continue // check that rank is correct, because we do not delete twin edges
                 val status = statuses[edge]!!
@@ -299,7 +300,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
 
         nonTreeEdges?.let {
             mainLoop@while (true) {
-                val edge = nonTreeEdges.pop() ?: break
+                val edge = nonTreeEdges.pop()
+                if (edge == NO_EDGE) break
                 val edgeRank = ranks[edge] ?: continue // skip already deleted edges
                 if (edgeRank != 0) continue // check that rank is correct, because we do not delete twin edges
                 when (statuses[edge]!!.get()) {

@@ -27,7 +27,7 @@ enum class TreeDynamicConnectivityConstructor(val construct: (size: Int) -> Tree
 class EulerTourTreeTest(private val dcp: TreeDynamicConnectivityConstructor) {
     @Test
     fun stress() {
-        val iterations = 5000000
+        val iterations = 500000
         val nodes = 8
         val scenarioSize = 25
         val scenarioGenerator = DynamicConnectivityScenarioGenerator(ScenarioType.TREE_CONNECTIVITY)

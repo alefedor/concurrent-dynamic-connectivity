@@ -2,15 +2,13 @@ package connectivity.concurrent.general
 
 import connectivity.*
 import connectivity.NO_EDGE
-import connectivity.concurrent.tree.ConcurrentEulerTourTree
-import connectivity.concurrent.tree.ConcurrentETTNode
+import connectivity.concurrent.tree.*
 import connectivity.concurrent.tree.recalculate
-import connectivity.concurrent.tree.update
 import connectivity.sequential.general.DynamicConnectivity
 
 
 class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
-    private val levels: Array<ConcurrentEulerTourTree>
+    private val levels: Array<ConcurrentFineGrainedEulerTourTree>
     private val ranks = ConcurrentEdgeMap<Int>()
 
     init {
@@ -20,7 +18,7 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
             levelNumber++
             maxSize *= 2
         }
-        levels = Array(levelNumber) { ConcurrentEulerTourTree(size) }
+        levels = Array(levelNumber) { ConcurrentFineGrainedEulerTourTree(size) }
     }
 
     override fun addEdge(u: Int, v: Int) = lockComponents(u, v) {
@@ -95,7 +93,7 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
 
     override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
 
-    private fun increaseTreeEdgesRank(node: ConcurrentETTNode, u: Int, v: Int, rank: Int) {
+    private fun increaseTreeEdgesRank(node: ConcurrentFineGrainedETTNode, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
 
         val treeEdge = node.currentLevelTreeEdge
@@ -118,7 +116,7 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
         node.recalculate()
     }
 
-    private fun findReplacement(node: ConcurrentETTNode, rank: Int, additionalRoot: ConcurrentETTNode): Edge {
+    private fun findReplacement(node: ConcurrentFineGrainedETTNode, rank: Int, additionalRoot: ConcurrentFineGrainedETTNode): Edge {
         if (!node.hasNonTreeEdges) return NO_EDGE
 
         var result: Edge = NO_EDGE
@@ -174,7 +172,7 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
         return result
     }
 
-    fun root(u: Int): ConcurrentETTNode = levels[0].root(u)
+    fun root(u: Int): ConcurrentFineGrainedETTNode = levels[0].root(u)
 
     private inline fun lockComponents(a: Int, b: Int, body: () -> Unit) {
         var u = a

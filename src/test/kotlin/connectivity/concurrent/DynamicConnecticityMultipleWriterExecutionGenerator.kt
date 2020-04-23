@@ -18,7 +18,7 @@ class GeneralDynamicConnectivityMultipleWriterExecutionGenerator(testConfigurati
     private val addEdgeMethod: Method
     private val removeEdgeMethod: Method
     private val connectedMethod: Method
-    private val scenarioGenerator = ScenarioGenerator()
+    private val scenarioGenerator = RandomScenarioGenerator()
     private val random = Random(23)
 
     init {

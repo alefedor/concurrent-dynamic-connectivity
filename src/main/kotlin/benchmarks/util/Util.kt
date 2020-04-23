@@ -36,17 +36,37 @@ fun randomGraph(nodes: Int, edges: Int, rnd: Random = Random(0)): Graph {
     return Graph(nodes, edgesList.toLongArray())
 }
 
+fun randomDividedGraph(components: Int, nodesEach: Int, edgesEach: Int, rnd: Random = Random(0)): Graph {
+    val graphs = Array(components) { randomGraph(nodesEach, edgesEach, rnd) }
+    val edges = LongArray(edgesEach * components) {
+        val graphId = it / edgesEach
+        val edgeId = it % edgesEach
+        val edge = graphs[graphId].edges[edgeId]
+        bidirectionalEdge(edge.from() + graphId * nodesEach, edge.to() + graphId * nodesEach)
+    }
+    return Graph(nodesEach * components, edges)
+}
+
 fun downloadOrCreateAndParseGraph(name: String, type: String, url: String): Graph {
     val gz = type.endsWith("gz")
     val ext = type.split(" ")[0]
-    val graphFile = "$name." + (if (ext == "rand") "gr" else ext) + (if (gz) ".gz" else "")
+    val graphFile = "$name." + (if (ext.startsWith("rand")) "gr" else ext) + (if (gz) ".gz" else "")
     if (!Paths.get(graphFile).toFile().exists()) {
         if (ext == "rand") {
             val parts = url.split(" ")
             val n = parts[0].toInt()
             val m = parts[1].toInt()
-            println("Generating $graphFile as a random connected graph with $n nodes and $m edges")
+            println("Generating $graphFile as a random graph with $n nodes and $m edges")
             val graphNodes = randomGraph(n, m)
+            writeGrFile(graphFile, graphNodes)
+            println("Generated $graphFile")
+        } else if (ext == "rand divided") {
+            val parts = url.split(" ")
+            val components = parts[0].toInt()
+            val n = parts[1].toInt()
+            val m = parts[2].toInt()
+            println("Generating $graphFile as a random divided graph with $components components, $n nodes and $m edges each")
+            val graphNodes = randomDividedGraph(components, n, m)
             writeGrFile(graphFile, graphNodes)
             println("Generated $graphFile")
         } else {

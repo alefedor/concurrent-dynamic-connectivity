@@ -6,7 +6,6 @@ import org.openjdk.jmh.results.format.ResultFormatType
 import org.openjdk.jmh.runner.Runner
 import org.openjdk.jmh.runner.RunnerException
 import org.openjdk.jmh.runner.options.OptionsBuilder
-import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeUnit
 
 @State(Scope.Thread)
@@ -38,7 +37,7 @@ open class DynamicConnectivityBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = ScenarioGenerator().generate(graph, workers, 10000000 / workers, 1, 1)
+        scenario = RandomScenarioGenerator().generate(graph, workers, 10000000 / workers, 1, 1)
     }
 
     @Setup(Level.Invocation)

@@ -2,7 +2,7 @@ package benchmarks
 
 import benchmarks.util.Graph
 import benchmarks.util.ScenarioExecutor
-import benchmarks.util.ScenarioGenerator
+import benchmarks.util.RandomScenarioGenerator
 import benchmarks.util.bidirectionalEdge
 import connectivity.concurrent.general.ImprovedCoarseGrainedLockingDynamicConnectivity
 import org.junit.Test
@@ -31,7 +31,7 @@ class ScenarioExecutorTest {
         )
 
         val graph = Graph(9, edges)
-        val scenario = ScenarioGenerator().generate(graph, 3, 6, 1, 1)
+        val scenario = RandomScenarioGenerator().generate(graph, 3, 6, 1, 1)
 
         repeat(1000) {
             val executor = ScenarioExecutor(scenario, ::ImprovedCoarseGrainedLockingDynamicConnectivity)

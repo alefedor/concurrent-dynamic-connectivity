@@ -1,5 +1,6 @@
 package benchmarks.util
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStreamReader
@@ -15,7 +16,7 @@ import kotlin.random.Random
 
 fun randomGraph(nodes: Int, edges: Int, rnd: Random = Random(0)): Graph {
     val edgesList = mutableListOf<Long>()
-    val presentEdges = mutableSetOf<Long>()
+    val presentEdges = LongOpenHashSet()
     repeat(edges) {
         while (true) {
             val first = rnd.nextInt(nodes)

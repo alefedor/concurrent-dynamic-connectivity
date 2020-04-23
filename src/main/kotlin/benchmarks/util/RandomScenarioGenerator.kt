@@ -27,8 +27,7 @@ class RandomScenarioGenerator {
 
                 when (type) {
                     QueryType.CONNECTED -> {
-                        val edge = graph.edges.random(rnd) // random edge from all graph
-                        edge
+                        randomEdge(graph.nodes)
                     }
                     QueryType.ADD_EDGE -> {
                         val edge = candidatesToAdd.pop(candidatesToAdd.indices.random(rnd))
@@ -64,5 +63,14 @@ class RandomScenarioGenerator {
         this[i] = this.last()
         this.removeAt(this.lastIndex)
         return result
+    }
+
+    private fun randomEdge(nodes: Int): Long {
+        while (true) {
+            val first = rnd.nextInt(nodes)
+            val second = rnd.nextInt(nodes)
+            if (first != second)
+                return bidirectionalEdge(first, second)
+        }
     }
 }

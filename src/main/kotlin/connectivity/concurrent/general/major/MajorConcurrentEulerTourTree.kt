@@ -126,8 +126,6 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 
     override fun connected(u: Int, v: Int): Boolean {
-        if (u == v) return true
-
         while (true) {
             val uRoot = root(u)
             val uRootVersion = uRoot.version
@@ -141,8 +139,6 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 
     internal fun connectedSimple(u: Int, v: Int, additionalRoot: Node? = null): Boolean {
-        if (u == v) return true
-
         val uRoot = root(u, additionalRoot)
         val vRoot = root(v, additionalRoot)
 

@@ -2,8 +2,7 @@ package connectivity.concurrent.general
 
 import connectivity.*
 import connectivity.NO_EDGE
-import connectivity.concurrent.tree.FineGrainedETTNode
-import connectivity.concurrent.tree.FineGrainedEulerTourTree
+import connectivity.concurrent.tree.*
 import connectivity.concurrent.tree.recalculate
 import connectivity.concurrent.tree.update
 import connectivity.sequential.general.DynamicConnectivity
@@ -55,29 +54,37 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
             return
         }
 
-        for (r in 0..rank)
-            levels[r].removeEdge(u, v)
-
         for (r in rank downTo 0) {
-            val searchLevel = levels[r]
-            var uRoot = searchLevel.root(u)
-            var vRoot = searchLevel.root(v)
+            // remove edge, but keep the parent link
+            var (uRoot, vRoot) = levels[r].removeEdge(u, v, false)
 
-            // swap components if needed, so that the uRoot component is smaller
             if (uRoot.size > vRoot.size) {
                 val tmp = uRoot
                 uRoot = vRoot
                 vRoot = tmp
             }
 
-            // promote tree edges for the lesser component
+            val lowerRoot = if (uRoot.parent != null) uRoot else vRoot
+
+            // promote tree edges for less component
             increaseTreeEdgesRank(uRoot, u, v, r)
-            val replacementEdge = findReplacement(uRoot, r)
+            val replacementEdge = findReplacement(uRoot, r, lowerRoot)
             if (replacementEdge != NO_EDGE) {
-                // if a replacement is found, then add it to all levels <= r
-                for (i in 0..r)
-                    levels[i].addEdge(replacementEdge.u(), replacementEdge.v(), i == r)
+                for (i in r downTo 0) {
+                    val lr = if (i == r) {
+                        lowerRoot
+                    } else {
+                        val (ur, vr) = levels[i].removeEdge(u, v, false)
+                        if (ur.parent != null) ur else vr
+                    }
+
+                    levels[i].addEdge(replacementEdge.u(), replacementEdge.v(), i == r, lr)
+                }
                 break
+            } else {
+                // linearization point, do an actual split on this level
+                uRoot.parent = null
+                vRoot.parent = null
             }
         }
     }
@@ -114,7 +121,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
         node.recalculate()
     }
 
-    private fun findReplacement(node: FineGrainedETTNode, rank: Int): Edge {
+    private fun findReplacement(node: FineGrainedETTNode, rank: Int, additionalRoot: FineGrainedETTNode): Edge {
         if (!node.hasNonTreeEdges) return NO_EDGE
 
         var result: Edge = NO_EDGE
@@ -138,7 +145,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
                     }
                 iterator.remove()
 
-                if (!level.connected(edge.u(), edge.v())) {
+                if (!level.connected(edge.u(), edge.v(), additionalRoot)) {
                     // is a replacement
                     result = edge
                     break
@@ -156,15 +163,16 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
         }
 
         if (result == NO_EDGE) {
-            val leftResult = node.left?.let { findReplacement(it, rank) } ?: NO_EDGE
+            val leftResult = node.left?.let { findReplacement(it, rank, additionalRoot) } ?: NO_EDGE
             if (leftResult != NO_EDGE)
                 result = leftResult
         }
         if (result == NO_EDGE) {
-            val rightResult = node.right?.let { findReplacement(it, rank) } ?: NO_EDGE
+            val rightResult = node.right?.let { findReplacement(it, rank, additionalRoot) } ?: NO_EDGE
             if (rightResult != NO_EDGE)
                 result = rightResult
         }
+        // recalculate flags after updates
         node.recalculate()
         return result
     }

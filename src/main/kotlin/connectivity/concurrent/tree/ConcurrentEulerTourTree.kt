@@ -124,8 +124,6 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 
     override fun connected(u: Int, v: Int): Boolean {
-        if (u == v) return true
-
         while (true) {
             val uRoot = root(u)
             val uRootVersion = uRoot.version
@@ -140,12 +138,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
     // simple sequential connectivity check
     internal fun connectedSimple(u: Int, v: Int, additionalRoot: ConcurrentETTNode?): Boolean {
-        if (u == v) return true
-
-        val uRoot = root(u, additionalRoot)
-        val vRoot = root(v, additionalRoot)
-
-        return uRoot === vRoot
+        return root(u, additionalRoot) === root(v, additionalRoot)
     }
 
     fun state() = Pair(edgeToNode.keys, edgeToNode.values.map { it.priority }) // the tree is determined by (value, priority) pairs
@@ -224,7 +217,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         }
     }
 
-    /// from 0 to n - 1
+    // from 0 to n - 1
     private fun ConcurrentETTNode.position(additionalRoot: ConcurrentETTNode? = null): Int {
         var position = (this.left?.size ?: 0)
         var current = this

@@ -2,12 +2,13 @@ package connectivity.concurrent.general
 
 import connectivity.*
 import connectivity.NO_EDGE
-import connectivity.concurrent.tree.ReadWriteFineGrainedETTNode
-import connectivity.concurrent.tree.ReadWriteFineGrainedEulerTourTree
+import connectivity.concurrent.tree.*
 import connectivity.concurrent.tree.recalculate
 import connectivity.concurrent.tree.update
 import connectivity.sequential.general.DynamicConnectivity
 import kotlin.collections.HashMap
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 import kotlin.math.max
 import kotlin.math.min
 
@@ -58,29 +59,37 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
             return
         }
 
-        for (r in 0..rank)
-            levels[r].removeEdge(u, v)
-
         for (r in rank downTo 0) {
-            val searchLevel = levels[r]
-            var uRoot = searchLevel.root(u)
-            var vRoot = searchLevel.root(v)
+            // remove edge, but keep the parent link
+            var (uRoot, vRoot) = levels[r].removeEdge(u, v, false)
 
-            // swap components if needed, so that the uRoot component is smaller
             if (uRoot.size > vRoot.size) {
                 val tmp = uRoot
                 uRoot = vRoot
                 vRoot = tmp
             }
 
-            // promote tree edges for the lesser component
+            val lowerRoot = if (uRoot.parent != null) uRoot else vRoot
+
+            // promote tree edges for less component
             increaseTreeEdgesRank(uRoot, u, v, r)
-            val replacementEdge = findReplacement(uRoot, r)
+            val replacementEdge = findReplacement(uRoot, r, lowerRoot)
             if (replacementEdge != NO_EDGE) {
-                // if a replacement is found, then add it to all levels <= r
-                for (i in 0..r)
-                    levels[i].addEdge(replacementEdge.u(), replacementEdge.v(), i == r)
+                for (i in r downTo 0) {
+                    val lr = if (i == r) {
+                        lowerRoot
+                    } else {
+                        val (ur, vr) = levels[i].removeEdge(u, v, false)
+                        if (ur.parent != null) ur else vr
+                    }
+
+                    levels[i].addEdge(replacementEdge.u(), replacementEdge.v(), i == r, lr)
+                }
                 break
+            } else {
+                // linearization point, do an actual split on this level
+                uRoot.parent = null
+                vRoot.parent = null
             }
         }
     }
@@ -119,7 +128,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
         node.recalculate()
     }
 
-    private fun findReplacement(node: ReadWriteFineGrainedETTNode, rank: Int): Edge {
+    private fun findReplacement(node: ReadWriteFineGrainedETTNode, rank: Int, additionalRoot: ReadWriteFineGrainedETTNode): Edge {
         if (!node.hasNonTreeEdges) return NO_EDGE
 
         var result: Edge = NO_EDGE
@@ -143,7 +152,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
                     }
                 iterator.remove()
 
-                if (!level.connected(edge.u(), edge.v())) {
+                if (!level.connected(edge.u(), edge.v(), additionalRoot)) {
                     // is a replacement
                     result = edge
                     break
@@ -161,12 +170,12 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
         }
 
         if (result == NO_EDGE) {
-            val leftResult = node.left?.let { findReplacement(it, rank) } ?: NO_EDGE
+            val leftResult = node.left?.let { findReplacement(it, rank, additionalRoot) } ?: NO_EDGE
             if (leftResult != NO_EDGE)
                 result = leftResult
         }
         if (result == NO_EDGE) {
-            val rightResult = node.right?.let { findReplacement(it, rank) } ?: NO_EDGE
+            val rightResult = node.right?.let { findReplacement(it, rank, additionalRoot) } ?: NO_EDGE
             if (rightResult != NO_EDGE)
                 result = rightResult
         }
@@ -175,55 +184,59 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
         return result
     }
 
-    private inline fun lockComponentsRead(u: Int, v: Int, body: () -> Unit) {
+    private inline fun lockComponentsRead(a: Int, b: Int, body: () -> Unit) {
+        var u = a
+        var v = b
+
         while (true) {
-            val uRoot = root(u)
-            val vRoot = root(v)
+            var uRoot = root(u)
+            var vRoot = root(v)
 
             // lock the component with lesser priority first to avoid deadlock
-            if (uRoot.priority < vRoot.priority) {
-                uRoot.lock!!.readLock().lock()
-                vRoot.lock!!.readLock().lock()
-            } else {
-                vRoot.lock!!.readLock().lock()
-                uRoot.lock!!.readLock().lock()
+            if (uRoot.priority > vRoot.priority) {
+                val tmp = u
+                u = v
+                v = tmp
+                val tmpNode = uRoot
+                uRoot = vRoot
+                vRoot = tmpNode
             }
-
-            if (uRoot == root(u) && vRoot == root(v)) {
-                body()
-                uRoot.lock.readLock().unlock()
-                vRoot.lock.readLock().unlock()
-                break
+            uRoot.lock!!.read {
+                vRoot.lock!!.read {
+                    if (uRoot == root(u) && vRoot == root(v)) {
+                        body()
+                        return
+                    }
+                }
             }
-
-            uRoot.lock.readLock().unlock()
-            vRoot.lock.readLock().unlock()
         }
     }
 
-    private inline fun lockComponentsWrite(u: Int, v: Int, body: () -> Unit) {
+    private inline fun lockComponentsWrite(a: Int, b: Int, body: () -> Unit) {
+        var u = a
+        var v = b
+
         while (true) {
-            val uRoot = root(u)
-            val vRoot = root(v)
+            var uRoot = root(u)
+            var vRoot = root(v)
 
             // lock the component with lesser priority first to avoid deadlock
-            if (uRoot.priority < vRoot.priority) {
-                uRoot.lock!!.writeLock().lock()
-                vRoot.lock!!.writeLock().lock()
-            } else {
-                vRoot.lock!!.writeLock().lock()
-                uRoot.lock!!.writeLock().lock()
+            if (uRoot.priority > vRoot.priority) {
+                val tmp = u
+                u = v
+                v = tmp
+                val tmpNode = uRoot
+                uRoot = vRoot
+                vRoot = tmpNode
             }
-
-            if (uRoot == root(u) && vRoot == root(v)) {
-                body()
-                uRoot.lock.writeLock().unlock()
-                vRoot.lock.writeLock().unlock()
-                break
+            uRoot.lock!!.write {
+                vRoot.lock!!.write {
+                    if (uRoot == root(u) && vRoot == root(v)) {
+                        body()
+                        return
+                    }
+                }
             }
-
-            uRoot.lock.writeLock().unlock()
-            vRoot.lock.writeLock().unlock()
         }
     }
 }

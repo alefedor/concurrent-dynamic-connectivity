@@ -14,12 +14,10 @@ class CoarseGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConne
         connectivity.addEdge(u, v)
     }
 
-    @Synchronized
     override fun removeEdge(u: Int, v: Int) = lock.write {
         connectivity.removeEdge(u, v)
     }
 
-    @Synchronized
     override fun connected(u: Int, v: Int): Boolean = lock.read {
         connectivity.connected(u, v)
     }

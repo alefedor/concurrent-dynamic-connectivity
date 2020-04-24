@@ -9,11 +9,12 @@ import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 
 val USA_ROADS_GRAPH_PARAMS = Triple("USA-ROADS", "gr gz", "http://users.diag.uniroma1.it/challenge9/data/USA-road-d/USA-road-d.W.gr.gz")
-val RANDOM_GRAPH_N_PARAMS = Triple("RANDOM-N", "rand", "3000000 12000000")
-val RANDOM_GRAPH_NLOG_PARAMS = Triple("RANDOM-NLOG", "rand", "500000 13200000")
+val RANDOM_GRAPH_N_PARAMS = Triple("RANDOM-N", "rand", "4000000 8000000")
+val RANDOM_GRAPH_NLOG_PARAMS = Triple("RANDOM-NLOG", "rand", "500000 13000000")
 val RANDOM_GRAPH_NSQRT_PARAMS = Triple("RANDOM-NSQRT", "rand", "80000 16000000")
 val BERKELEY_STANFORD_WEB_GRAPH_PARAMS = Triple("BERKELEY-STANFORD-WEB", "txt gz", "http://snap.stanford.edu/data/web-BerkStan.txt.gz")
 val INTERNET_TOPOLOGY_GRAPH_PARAMS = Triple("INTERNET-TOPOLOGY", "txt gz", "http://snap.stanford.edu/data/as-skitter.txt.gz")
+val RANDOM_DIVIDED_GRAPH_PARAMS = Triple("RANDOM-DIVIDED", "rand divided", "10 50000 1300000")
 
 lateinit var USA_ROADS_GRAPH: Graph
 lateinit var RANDOM_GRAPH_N: Graph
@@ -21,6 +22,7 @@ lateinit var RANDOM_GRAPH_NLOG: Graph
 lateinit var RANDOM_GRAPH_NSQRT: Graph
 lateinit var BERKELEY_STANFORD_WEB_GRAPH: Graph
 lateinit var INTERNET_TOPOLOGY_GRAPH: Graph
+lateinit var RANDOM_DIVIDED_GRAPH: Graph
 
 
 enum class GraphParams : Serializable {
@@ -29,7 +31,8 @@ enum class GraphParams : Serializable {
     RANDOM_NLOG,
 //    RANDOM_NSQRT,
 //    BERKELEY_STANFORD_WEB,
-    INTERNET_TOPOLOGY
+    INTERNET_TOPOLOGY,
+    RANDOM_DIVIDED
 }
 
 fun loadGraph(params: Triple<String, String, String>): Graph {
@@ -84,6 +87,11 @@ class GraphServer : UnicastRemoteObject(), GraphServerInterface {
                 INTERNET_TOPOLOGY_GRAPH =
                     loadGraph(INTERNET_TOPOLOGY_GRAPH_PARAMS)
             INTERNET_TOPOLOGY_GRAPH
+        }
+        GraphParams.RANDOM_DIVIDED -> {
+            if (!::RANDOM_DIVIDED_GRAPH.isInitialized)
+                RANDOM_DIVIDED_GRAPH = loadGraph(RANDOM_DIVIDED_GRAPH_PARAMS)
+            RANDOM_DIVIDED_GRAPH
         }
     }
 

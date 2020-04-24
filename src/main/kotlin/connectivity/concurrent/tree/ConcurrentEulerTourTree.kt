@@ -65,12 +65,12 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val uvNode = ConcurrentETTNode(
             size + random.nextInt(10 * size),
             false,
-            if (isCurrentLevelTreeEdge) uvEdge else NO_EDGE
+            if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = ConcurrentETTNode(
             size + random.nextInt(10 * size),
             false,
-            if (isCurrentLevelTreeEdge) vuEdge else NO_EDGE
+            if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
         edgeToNode[uvEdge] = uvNode
         edgeToNode[vuEdge] = vuNode

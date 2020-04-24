@@ -61,7 +61,7 @@ fun downloadOrCreateAndParseGraph(name: String, type: String, url: String): Grap
             val graphNodes = randomGraph(n, m)
             writeGrFile(graphFile, graphNodes)
             println("Generated $graphFile")
-        } else if (ext == "rand divided") {
+        } else if (ext == "rand_divided") {
             val parts = url.split(" ")
             val components = parts[0].toInt()
             val n = parts[1].toInt()

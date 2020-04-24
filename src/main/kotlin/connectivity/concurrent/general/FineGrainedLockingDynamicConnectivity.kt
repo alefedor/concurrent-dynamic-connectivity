@@ -103,10 +103,8 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
         val treeEdge = node.currentLevelTreeEdge
         if (treeEdge != NO_EDGE) {
             node.currentLevelTreeEdge = NO_EDGE
-            if (treeEdge.u() < treeEdge.v()) { // not to promote the same edge twice
-                levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
-                ranks[treeEdge] = rank + 1
-            }
+            levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
+            ranks[treeEdge] = rank + 1
         }
 
         // recursive call for children

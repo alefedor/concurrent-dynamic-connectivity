@@ -62,12 +62,12 @@ class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity
         val uvNode = ReadWriteFineGrainedETTNode(
             size + random.nextInt(10 * size),
             false,
-            if (isCurrentLevelTreeEdge) uvEdge else NO_EDGE
+            if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = ReadWriteFineGrainedETTNode(
             size + random.nextInt(10 * size),
             false,
-            if (isCurrentLevelTreeEdge) vuEdge else NO_EDGE
+            if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
         edgeToNode[uvEdge] = uvNode
         edgeToNode[vuEdge] = vuNode

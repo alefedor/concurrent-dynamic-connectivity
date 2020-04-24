@@ -9,12 +9,12 @@ import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 
 val USA_ROADS_GRAPH_PARAMS = Triple("USA-ROADS", "gr gz", "http://users.diag.uniroma1.it/challenge9/data/USA-road-d/USA-road-d.W.gr.gz")
-val RANDOM_GRAPH_N_PARAMS = Triple("RANDOM-N", "rand", "4000000 8000000")
+val RANDOM_GRAPH_N_PARAMS = Triple("RANDOM-N", "rand", "3000000 6000000")
 val RANDOM_GRAPH_NLOG_PARAMS = Triple("RANDOM-NLOG", "rand", "500000 13000000")
 val RANDOM_GRAPH_NSQRT_PARAMS = Triple("RANDOM-NSQRT", "rand", "80000 16000000")
 val BERKELEY_STANFORD_WEB_GRAPH_PARAMS = Triple("BERKELEY-STANFORD-WEB", "txt gz", "http://snap.stanford.edu/data/web-BerkStan.txt.gz")
 val INTERNET_TOPOLOGY_GRAPH_PARAMS = Triple("INTERNET-TOPOLOGY", "txt gz", "http://snap.stanford.edu/data/as-skitter.txt.gz")
-val RANDOM_DIVIDED_GRAPH_PARAMS = Triple("RANDOM-DIVIDED", "rand divided", "10 50000 1300000")
+val RANDOM_DIVIDED_GRAPH_PARAMS = Triple("RANDOM-DIVIDED", "rand_divided", "10 50000 1300000")
 
 lateinit var USA_ROADS_GRAPH: Graph
 lateinit var RANDOM_GRAPH_N: Graph

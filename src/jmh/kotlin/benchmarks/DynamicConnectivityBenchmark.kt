@@ -23,7 +23,7 @@ open class DynamicConnectivityBenchmark {
     @Param
     open var dcpConstructor: DCPConstructor = DCPConstructor.values()[0]
 
-    @Param("1", "2", "4", "8", "16", "32", "64", "96", "128")
+    @Param("1", "2", "4", "8", "16", "32", "64", "128")
     open var workers: Int = 0
 
     @Param("1", "5", "25")
@@ -66,7 +66,7 @@ open class LockElisionDynamicConnectivityBenchmark {
     @Param
     open var dcpConstructor: LockElisionDCPConstructor = LockElisionDCPConstructor.values()[0]
 
-    @Param("1", "2", "4", "8", "16", "32", "64", "96", "128")
+    @Param("1", "2", "4", "8", "16", "32", "64", "128")
     open var workers: Int = 0
 
     @Param("1", "5", "25")

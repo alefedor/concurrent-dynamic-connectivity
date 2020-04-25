@@ -12,7 +12,7 @@ enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size:
     ImprovedCoarseGrainedLockingDynamicConnectivity(::ImprovedCoarseGrainedLockingDynamicConnectivity),
     ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
-    MajorFasterDynamicConnectivity(::MajorFasterDynamicConnectivity)
+    //MajorFasterDynamicConnectivity(::MajorFasterDynamicConnectivity)
 }
 
-var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.MajorFasterDynamicConnectivity
+var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.MajorDynamicConnectivity

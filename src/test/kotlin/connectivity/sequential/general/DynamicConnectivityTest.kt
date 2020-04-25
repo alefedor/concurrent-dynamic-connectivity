@@ -21,7 +21,7 @@ enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> D
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
     ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
-    MajorFasterDynamicConnectivity(::MajorFasterDynamicConnectivity)
+    //MajorFasterDynamicConnectivity(::MajorFasterDynamicConnectivity)
 }
 
 @RunWith(Parameterized::class)

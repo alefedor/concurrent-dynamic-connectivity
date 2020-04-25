@@ -14,7 +14,7 @@ val RANDOM_GRAPH_NLOG_PARAMS = Triple("RANDOM-NLOG", "rand", "500000 13000000")
 val RANDOM_GRAPH_NSQRT_PARAMS = Triple("RANDOM-NSQRT", "rand", "80000 16000000")
 val BERKELEY_STANFORD_WEB_GRAPH_PARAMS = Triple("BERKELEY-STANFORD-WEB", "txt gz", "http://snap.stanford.edu/data/web-BerkStan.txt.gz")
 val INTERNET_TOPOLOGY_GRAPH_PARAMS = Triple("INTERNET-TOPOLOGY", "txt gz", "http://snap.stanford.edu/data/as-skitter.txt.gz")
-val RANDOM_DIVIDED_GRAPH_PARAMS = Triple("RANDOM-DIVIDED", "rand_divided", "10 5000 80000")
+val RANDOM_DIVIDED_GRAPH_PARAMS = Triple("RANDOM-DIVIDED", "rand_divided", "10 10000 200000")
 
 lateinit var USA_ROADS_GRAPH: Graph
 lateinit var RANDOM_GRAPH_N: Graph

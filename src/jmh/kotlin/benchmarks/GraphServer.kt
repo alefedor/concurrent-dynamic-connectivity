@@ -9,12 +9,12 @@ import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 
 val USA_ROADS_GRAPH_PARAMS = Triple("USA-ROADS", "gr gz", "http://users.diag.uniroma1.it/challenge9/data/USA-road-d/USA-road-d.W.gr.gz")
-val RANDOM_GRAPH_N_PARAMS = Triple("RANDOM-N", "rand", "3000000 6000000")
+val RANDOM_GRAPH_N_PARAMS = Triple("RANDOM-N", "rand", "2000000 4000000")
 val RANDOM_GRAPH_NLOG_PARAMS = Triple("RANDOM-NLOG", "rand", "500000 13000000")
 val RANDOM_GRAPH_NSQRT_PARAMS = Triple("RANDOM-NSQRT", "rand", "80000 16000000")
 val BERKELEY_STANFORD_WEB_GRAPH_PARAMS = Triple("BERKELEY-STANFORD-WEB", "txt gz", "http://snap.stanford.edu/data/web-BerkStan.txt.gz")
 val INTERNET_TOPOLOGY_GRAPH_PARAMS = Triple("INTERNET-TOPOLOGY", "txt gz", "http://snap.stanford.edu/data/as-skitter.txt.gz")
-val RANDOM_DIVIDED_GRAPH_PARAMS = Triple("RANDOM-DIVIDED", "rand_divided", "10 50000 1300000")
+val RANDOM_DIVIDED_GRAPH_PARAMS = Triple("RANDOM-DIVIDED", "rand_divided", "10 5000 80000")
 
 lateinit var USA_ROADS_GRAPH: Graph
 lateinit var RANDOM_GRAPH_N: Graph
@@ -27,11 +27,11 @@ lateinit var RANDOM_DIVIDED_GRAPH: Graph
 
 enum class GraphParams : Serializable {
 //    USA_ROADS,
-    RANDOM_N,
-    RANDOM_NLOG,
+    //RANDOM_N,
+//    RANDOM_NLOG,
 //    RANDOM_NSQRT,
 //    BERKELEY_STANFORD_WEB,
-    INTERNET_TOPOLOGY,
+//    INTERNET_TOPOLOGY,
     RANDOM_DIVIDED
 }
 
@@ -58,18 +58,18 @@ class GraphServer : UnicastRemoteObject(), GraphServerInterface {
                     loadGraph(USA_ROADS_GRAPH_PARAMS)
             USA_ROADS_GRAPH
         }*/
-        GraphParams.RANDOM_N -> {
+        /*GraphParams.RANDOM_N -> {
             if (!::RANDOM_GRAPH_N.isInitialized)
                 RANDOM_GRAPH_N =
                     loadGraph(RANDOM_GRAPH_N_PARAMS)
             RANDOM_GRAPH_N
-        }
-        GraphParams.RANDOM_NLOG -> {
+        }*/
+        /*GraphParams.RANDOM_NLOG -> {
             if (!::RANDOM_GRAPH_NLOG.isInitialized)
                 RANDOM_GRAPH_NLOG =
                     loadGraph(RANDOM_GRAPH_NLOG_PARAMS)
             RANDOM_GRAPH_NLOG
-        }
+        }*/
         /*GraphParams.RANDOM_NSQRT -> {
             if (!::RANDOM_GRAPH_NSQRT.isInitialized)
                 RANDOM_GRAPH_NSQRT =
@@ -82,12 +82,12 @@ class GraphServer : UnicastRemoteObject(), GraphServerInterface {
                     loadGraph(BERKELEY_STANFORD_WEB_GRAPH_PARAMS)
             BERKELEY_STANFORD_WEB_GRAPH
         }*/
-        GraphParams.INTERNET_TOPOLOGY -> {
+        /*GraphParams.INTERNET_TOPOLOGY -> {
             if (!::INTERNET_TOPOLOGY_GRAPH.isInitialized)
                 INTERNET_TOPOLOGY_GRAPH =
                     loadGraph(INTERNET_TOPOLOGY_GRAPH_PARAMS)
             INTERNET_TOPOLOGY_GRAPH
-        }
+        }*/
         GraphParams.RANDOM_DIVIDED -> {
             if (!::RANDOM_DIVIDED_GRAPH.isInitialized)
                 RANDOM_DIVIDED_GRAPH = loadGraph(RANDOM_DIVIDED_GRAPH_PARAMS)

@@ -1,9 +1,10 @@
 package connectivity
 
-import com.boundary.high_scale_lib.NonBlockingHashSetLong
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong
+import org.jctools.maps.NonBlockingHashMap
+import thirdparty.boundary.NonBlockingHashSetLong
+import thirdparty.jctools.NonBlockingHashMapLong
 
 
 typealias Edge = Long

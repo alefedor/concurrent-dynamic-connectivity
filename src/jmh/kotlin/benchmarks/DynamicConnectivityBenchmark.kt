@@ -11,11 +11,11 @@ import java.util.concurrent.TimeUnit
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 12, time = 1, timeUnit = TimeUnit.SECONDS)
-@Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 4, time = 1, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
 open class DynamicConnectivityBenchmark {
     @Param
-    open var graphParams: GraphParams = GraphParams.INTERNET_TOPOLOGY
+    open var graphParams: GraphParams = GraphParams.values()[0]
 
     lateinit var scenario: Scenario
     lateinit var scenarioExecutor: ScenarioExecutor
@@ -23,7 +23,7 @@ open class DynamicConnectivityBenchmark {
     @Param
     open var dcpConstructor: DCPConstructor = DCPConstructor.values()[0]
 
-    @Param("1", "2", "4", "8", "16", "32", "64", "128")
+    @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
 
     @Param("1", "5", "25")
@@ -37,7 +37,7 @@ open class DynamicConnectivityBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = RandomScenarioGenerator().generate(graph, workers, 10000000 / workers, 1, readWeight)
+        scenario = RandomScenarioGenerator().generate(graph, workers, 1000000 / workers, 1, readWeight)
     }
 
     @Setup(Level.Invocation)
@@ -54,11 +54,11 @@ open class DynamicConnectivityBenchmark {
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 12, time = 1, timeUnit = TimeUnit.SECONDS)
-@Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 4, time = 1, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
 open class LockElisionDynamicConnectivityBenchmark {
     @Param
-    open var graphParams: GraphParams = GraphParams.INTERNET_TOPOLOGY
+    open var graphParams: GraphParams = GraphParams.values()[0]
 
     lateinit var scenario: Scenario
     lateinit var scenarioExecutor: ScenarioExecutor
@@ -66,7 +66,7 @@ open class LockElisionDynamicConnectivityBenchmark {
     @Param
     open var dcpConstructor: LockElisionDCPConstructor = LockElisionDCPConstructor.values()[0]
 
-    @Param("1", "2", "4", "8", "16", "32", "64", "128")
+    @Param("1", "2", "4", "8", "16", "32", "64")
     open var workers: Int = 0
 
     @Param("1", "5", "25")
@@ -80,7 +80,7 @@ open class LockElisionDynamicConnectivityBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = RandomScenarioGenerator().generate(graph, workers, 10000000 / workers, 1, readWeight)
+        scenario = RandomScenarioGenerator().generate(graph, workers, 1000000 / workers, 1, readWeight)
     }
 
     @Setup(Level.Invocation)
@@ -108,7 +108,7 @@ fun main() {
         .build()
     Runner(dcpOptions).run()
 
-    val lockElisionDcpOptions = OptionsBuilder()
+    /*val lockElisionDcpOptions = OptionsBuilder()
         .include(LockElisionDynamicConnectivityBenchmark::class.java.simpleName)
         .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx60g", "-Xms5g")
         //.jvmArgs("-Xmx60g", "-Xms5g")
@@ -116,7 +116,7 @@ fun main() {
         .resultFormat(ResultFormatType.CSV)
         .result("dcp_lock_elision_results.csv")
         .build()
-    Runner(lockElisionDcpOptions).run()
+    Runner(lockElisionDcpOptions).run()*/
 }
 
 fun testGraphs() {

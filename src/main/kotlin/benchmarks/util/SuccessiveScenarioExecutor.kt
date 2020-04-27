@@ -3,29 +3,24 @@ package benchmarks.util
 import connectivity.sequential.general.DynamicConnectivity
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
-const val workAmount = 40
-
-class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicConnectivity) {
+class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicConnectivity) {
     private val dcp = dcpConstructor(scenario.nodes)
 
+    private val pos = AtomicInteger()
     private val threads: Array<Thread>
-
-    private val operationsExecuted = AtomicInteger(0)
 
     init {
         for (edge in scenario.initialEdges)
             dcp.addEdge(edge.from(), edge.to())
 
-        val operationsNeeded = scenario.threads * scenario.queries[0].size / 2
-
         threads = Array(scenario.threads) { threadId ->
             Thread {
-                val queries = scenario.queries[threadId]
-                var i = 0
+                val queries = scenario.queries[0]
                 while (true) {
-                    val query = queries[i++]
+                    val id = pos.incrementAndGet()
+                    if (id >= queries.size) break
+                    val query = queries[id]
                     when (query.type()) {
                         QueryType.CONNECTED -> {
                             dcp.connected(query.from(), query.to())
@@ -38,8 +33,6 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
                         }
                     }
                     work(workAmount)
-                    val ops = operationsExecuted.incrementAndGet()
-                    if (ops >= operationsNeeded) break
                 }
             }
         }

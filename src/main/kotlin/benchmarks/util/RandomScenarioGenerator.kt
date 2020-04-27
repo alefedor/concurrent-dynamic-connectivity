@@ -15,7 +15,7 @@ class RandomScenarioGenerator {
             val candidatesToAdd: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[initialEdgesNumber + thread * edgesPerThread + it] }
             val candidatesToRemove: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[thread * edgesPerThread + it] }
 
-            LongArray(sizePerThread) {
+            LongArray(sizePerThread * 2) {
                 var type: QueryType
 
                 while (true) {

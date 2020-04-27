@@ -5,12 +5,12 @@ import connectivity.concurrent.general.major.MajorDynamicConnectivity
 import connectivity.sequential.general.DynamicConnectivity
 
 enum class DCPConstructor(val construct: (Int) -> DynamicConnectivity) {
-    CoarseGrainedLockingDCP(::CoarseGrainedLockingDynamicConnectivity),
+    /*CoarseGrainedLockingDCP(::CoarseGrainedLockingDynamicConnectivity),
     CoarseGrainedReadWriteLockingDCP(::CoarseGrainedReadWriteLockingDynamicConnectivity),
     ImprovedCoarseGrainedLockingDCP(::ImprovedCoarseGrainedLockingDynamicConnectivity),
     FineGrainedLockingDCP(::FineGrainedLockingDynamicConnectivity),
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
-    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),
+    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),*/
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
 }
 

@@ -112,7 +112,7 @@ fun main() {
         .build()
     Runner(dcpOptions).run()
 
-    val lockElisionDcpOptions = OptionsBuilder()
+    /*val lockElisionDcpOptions = OptionsBuilder()
         .include(LockElisionDynamicConnectivityBenchmark::class.java.simpleName)
         .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=10", "-Xmx60g", "-Xms5g")
         //.jvmArgs("-Xmx60g", "-Xms5g")
@@ -120,7 +120,7 @@ fun main() {
         .resultFormat(ResultFormatType.CSV)
         .result("dcp_lock_elision_results.csv")
         .build()
-    Runner(lockElisionDcpOptions).run()
+    Runner(lockElisionDcpOptions).run()*/
 }
 
 fun testGraphs() {

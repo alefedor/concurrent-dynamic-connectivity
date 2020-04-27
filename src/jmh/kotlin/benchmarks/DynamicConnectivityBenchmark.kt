@@ -60,7 +60,7 @@ open class DynamicConnectivityBenchmark {
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Measurement(iterations = iterations, time = 1, timeUnit = TimeUnit.SECONDS)
 @Warmup(iterations = warmupIterations, time = 1, timeUnit = TimeUnit.SECONDS)
-open class LockElisionDynamicConnectivityBenchmark {
+open class LockElidfsionDynafgmicConngffectivityBenchmark {
     @Param
     open var graphParams: GraphParams = GraphParams.values()[0]
 

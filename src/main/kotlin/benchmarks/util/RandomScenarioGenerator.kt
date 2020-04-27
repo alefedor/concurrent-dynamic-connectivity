@@ -2,6 +2,8 @@ package benchmarks.util
 
 import kotlin.random.Random
 
+val OVERHEAD_RATIO = 4
+
 class RandomScenarioGenerator {
     private val rnd = Random(343)
 
@@ -15,7 +17,7 @@ class RandomScenarioGenerator {
             val candidatesToAdd: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[initialEdgesNumber + thread * edgesPerThread + it] }
             val candidatesToRemove: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[thread * edgesPerThread + it] }
 
-            LongArray(sizePerThread * 2) {
+            LongArray(sizePerThread * OVERHEAD_RATIO) {
                 var type: QueryType
 
                 while (true) {

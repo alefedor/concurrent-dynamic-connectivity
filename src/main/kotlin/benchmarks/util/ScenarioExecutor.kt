@@ -14,16 +14,22 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
 
     private val operationsExecuted = AtomicInteger(0)
 
+    @Volatile
+    private var start = false
+
     init {
         for (edge in scenario.initialEdges)
             dcp.addEdge(edge.from(), edge.to())
 
-        val operationsNeeded = scenario.threads * scenario.queries[0].size / 2
+        val operationsNeeded = scenario.threads * scenario.queries[0].size / OVERHEAD_RATIO
 
         threads = Array(scenario.threads) { threadId ->
             Thread {
                 val queries = scenario.queries[threadId]
                 var i = 0
+
+                while (!start);
+
                 while (true) {
                     val query = queries[i++]
                     when (query.type()) {
@@ -43,10 +49,11 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
                 }
             }
         }
+        threads.forEach { it.start() }
     }
 
     fun run() {
-        threads.forEach { it.start() }
+        start = true
         threads.forEach { it.join() }
     }
 

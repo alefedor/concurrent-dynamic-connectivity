@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
 const val workAmount = 40
+private const val BATCH_SIZE = 10 // increase counter in batches to reduce contention
 
 class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicConnectivity) {
     private val dcp = dcpConstructor(scenario.nodes)
@@ -21,17 +22,21 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
         for (edge in scenario.initialEdges)
             dcp.addEdge(edge.from(), edge.to())
 
-        val operationsNeeded = scenario.threads * scenario.queries[0].size / OVERHEAD_RATIO
+        val expectedOverhead = scenario.threads * BATCH_SIZE / 2
+        val operationsNeeded = scenario.threads * scenario.queries[0].size / OVERHEAD_RATIO - expectedOverhead
+        val threadsInitialized = AtomicInteger(0)
 
         threads = Array(scenario.threads) { threadId ->
             Thread {
                 val queries = scenario.queries[threadId]
-                var i = 0
 
-                while (!start);
+                threadsInitialized.incrementAndGet()
 
-                while (true) {
-                    val query = queries[i++]
+                while (!start); // wait until start
+
+                var idRemainder = 0
+
+                for (query in queries) {
                     when (query.type()) {
                         QueryType.CONNECTED -> {
                             dcp.connected(query.from(), query.to())
@@ -44,12 +49,18 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
                         }
                     }
                     work(workAmount)
-                    val ops = operationsExecuted.incrementAndGet()
-                    if (ops >= operationsNeeded) break
+
+                    idRemainder++
+                    if (idRemainder == BATCH_SIZE) {
+                        idRemainder = 0
+                        val ops = operationsExecuted.addAndGet(BATCH_SIZE)
+                        if (ops >= operationsNeeded) break
+                    }
                 }
             }
         }
         threads.forEach { it.start() }
+        while (threadsInitialized.get() != scenario.threads); // wait until all threads are initialized
     }
 
     fun run() {

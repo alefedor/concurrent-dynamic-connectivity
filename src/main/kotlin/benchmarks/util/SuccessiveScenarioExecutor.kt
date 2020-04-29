@@ -17,11 +17,15 @@ class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -
         for (edge in scenario.initialEdges)
             dcp.addEdge(edge.from(), edge.to())
 
+        val threadsInitialized = AtomicInteger(0)
+
         threads = Array(scenario.threads) { threadId ->
             Thread {
                 val queries = scenario.queries[0]
 
-                while (!start);
+                threadsInitialized.incrementAndGet()
+
+                while (!start); // wait until start
 
                 while (true) {
                     val id = pos.incrementAndGet()
@@ -42,7 +46,9 @@ class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -
                 }
             }
         }
+
         threads.forEach { it.start() }
+        while (threadsInitialized.get() != scenario.threads); // wait until all threads are initialized
     }
 
     fun run() {

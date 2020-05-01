@@ -3,6 +3,7 @@ package connectivity.sequential.tree
 import connectivity.*
 import connectivity.NO_EDGE
 import java.util.*
+import java.util.concurrent.ThreadLocalRandom
 import kotlin.random.Random
 
 interface TreeDynamicConnectivity {
@@ -11,6 +12,9 @@ interface TreeDynamicConnectivity {
     fun connected(u: Int, v: Int): Boolean
 }
 
+// Possible optimization: getting rid of `priority` and counting it with our MAGIC constant.
+// We can always store either node id or edge in the current `currentLevelTreeEdge` field, as well
+// as a bit to mark whether this node corresponds to a node or an edge.
 class SequentialETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     var parent: SequentialETTNode? = null
     var left: SequentialETTNode? = null
@@ -25,14 +29,13 @@ class SequentialETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: E
 class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<SequentialETTNode>
     private val edgeToNode = SequentialEdgeMap<SequentialETTNode>()
-    private val random = Random(0)
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle(random)
+        priorities.shuffle()
         nodes = Array(size) { SequentialETTNode(priorities[it]) }
     }
 
@@ -53,8 +56,8 @@ class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val vuEdge = makeDirectedEdge(v, u)
 
         // create nodes corresponding to two directed copies of the new edge
-        val uvNode = SequentialETTNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE)
-        val vuNode = SequentialETTNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE)
+        val uvNode = SequentialETTNode(size + Random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE)
+        val vuNode = SequentialETTNode(size + Random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE)
         edgeToNode[uvEdge] = uvNode
         edgeToNode[vuEdge] = vuNode
 

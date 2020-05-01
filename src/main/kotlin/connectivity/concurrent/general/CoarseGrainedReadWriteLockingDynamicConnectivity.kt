@@ -7,7 +7,7 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 class CoarseGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
-    private val lock = ReentrantReadWriteLock()
+    private val lock = ReentrantReadWriteLock() // TODO replace me with a fast one, pleaaaseee!
     private val connectivity = SequentialDynamicConnectivity(size)
 
     override fun addEdge(u: Int, v: Int) = lock.write {

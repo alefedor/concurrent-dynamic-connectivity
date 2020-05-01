@@ -10,11 +10,12 @@ interface DynamicConnectivity {
     fun connected(u: Int, v: Int): Boolean
 }
 
-class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivity {
+class SequentialDynamicConnectivity (size: Int) : DynamicConnectivity {
     private val levels: Array<SequentialEulerTourTree>
     private val ranks = SequentialEdgeMap<Int>()
 
     init {
+        // TODO can be replaced with Math.log(..) or moved to Utils.kt
         var levelNumber = 1
         var maxSize = 1
         while (maxSize < size) {
@@ -62,19 +63,10 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
 
         for (r in rank downTo 0) {
             val searchLevel = levels[r]
-            var uRoot = searchLevel.root(u)
-            var vRoot = searchLevel.root(v)
-
-            // swap components if needed, so that the uRoot component is smaller
-            if (uRoot.size > vRoot.size) {
-                val tmp = uRoot
-                uRoot = vRoot
-                vRoot = tmp
-            }
-
+            val root = minTree(searchLevel.root(u), searchLevel.root(v))
             // promote tree edges for the lesser component
-            increaseTreeEdgesRank(uRoot, u, v, r)
-            val replacementEdge = findReplacement(uRoot, r)
+            increaseTreeEdgesRank(root, u, v, r)
+            val replacementEdge = findReplacement(root, r)
             if (replacementEdge != NO_EDGE) {
                 // if a replacement is found, then add it to all levels <= r
                 for (i in 0..r)
@@ -84,6 +76,9 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
         }
 
     }
+
+    private fun minTree(root1: SequentialETTNode, root2: SequentialETTNode) =
+        if (root1.size <= root2.size) root1 else root2
 
     override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
 

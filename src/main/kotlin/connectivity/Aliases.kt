@@ -6,7 +6,6 @@ import org.jctools.maps.NonBlockingHashMap
 import thirdparty.boundary.NonBlockingHashSetLong
 import thirdparty.jctools.NonBlockingHashMapLong
 
-
 typealias Edge = Long
 typealias SequentialEdgeMap<T> = Long2ReferenceOpenHashMap<T>
 typealias ConcurrentEdgeMap<T> = NonBlockingHashMapLong<T>

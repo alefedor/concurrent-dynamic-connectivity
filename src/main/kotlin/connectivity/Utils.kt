@@ -3,6 +3,8 @@ package connectivity
 import kotlin.math.max
 import kotlin.math.min
 
+// TODO "16777215" should be replaced with `const val`.
+// TODO Please, count it in compile time like `(1 shl 32) - 1` -- this makes your code more readable.
 // getters for endpoints of an edge
 inline fun Edge.u(): Int = (this and (16777215)).toInt()
 inline fun Edge.v(): Int = ((this shr 24) and 16777215).toInt()

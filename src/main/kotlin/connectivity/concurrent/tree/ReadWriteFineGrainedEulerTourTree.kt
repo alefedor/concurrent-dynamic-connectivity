@@ -18,6 +18,7 @@ class ReadWriteFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, t
     var hasNonTreeEdges: Boolean = false // for traversal
     var currentLevelTreeEdge: Edge = treeEdge
     var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
+    // TODO replace Java's RW-lock with the D.Dice's one (BRAVO?)
     val lock: ReentrantReadWriteLock? = if (isVertex) ReentrantReadWriteLock() else null
 }
 

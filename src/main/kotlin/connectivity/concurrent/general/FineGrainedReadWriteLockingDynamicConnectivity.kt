@@ -1,16 +1,13 @@
 package connectivity.concurrent.general
 
 import connectivity.*
-import connectivity.NO_EDGE
-import connectivity.concurrent.tree.*
+import connectivity.concurrent.tree.ReadWriteFineGrainedETTNode
+import connectivity.concurrent.tree.ReadWriteFineGrainedEulerTourTree
 import connectivity.concurrent.tree.recalculate
 import connectivity.concurrent.tree.update
 import connectivity.sequential.general.DynamicConnectivity
-import kotlin.collections.HashMap
 import kotlin.concurrent.read
 import kotlin.concurrent.write
-import kotlin.math.max
-import kotlin.math.min
 
 class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
     private val levels: Array<ReadWriteFineGrainedEulerTourTree>
@@ -94,12 +91,8 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
         }
     }
 
-    override fun connected(u: Int, v: Int): Boolean {
-        var result = false
-        lockComponentsRead(u, v) {
-            result = levels[0].connected(u, v)
-        }
-        return result
+    override fun connected(u: Int, v: Int) = withLockedComponentsForRead(u, v) {
+        levels[0].connected(u, v)
     }
 
     fun root(u: Int): ReadWriteFineGrainedETTNode = levels[0].root(u)
@@ -182,9 +175,9 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
         return result
     }
 
-    private inline fun lockComponentsRead(a: Int, b: Int, body: () -> Unit) {
-        var u = a
-        var v = b
+    private inline fun <R> withLockedComponentsForRead(u: Int, v: Int, action: () -> R): R {
+        var u = u
+        var v = v
 
         while (true) {
             var uRoot = root(u)
@@ -202,8 +195,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
             uRoot.lock!!.read {
                 vRoot.lock!!.read {
                     if (uRoot == root(u) && vRoot == root(v)) {
-                        body()
-                        return
+                        return action()
                     }
                 }
             }

@@ -27,14 +27,13 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE
 class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<Node>
     private val edgeToNode = ConcurrentEdgeMap<Node>()
-    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle(random)
+        priorities.shuffle()
         nodes = Array(size) { Node(priorities[it]) }
     }
 
@@ -65,12 +64,12 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
         // create nodes corresponding to two directed copies of the new edge
         val uvNode = Node(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = Node(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -106,7 +105,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val div1 = split(root, rightPosition + 1)
         div1.first = split(div1.first, rightPosition).first // forget (v, u)
         val div2 = split(div1.first, leftPosition)
-        val component1 = merge(div2.first, div1.second)!!
+        val component1 = merge(div2.first, div1.second)
         val component2 = split(div2.second, 1).second!! // forget (u, v)
 
         if (doSplit) {
@@ -147,7 +146,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
     fun state() = Pair(edgeToNode.keys, edgeToNode.values.map { it.priority }) // the tree is determined by (value, priority) pairs
 
-    private inline fun rereadRoot(v: Int, wasRoot: Node, wasVersion: Int): Boolean {
+    private fun rereadRoot(v: Int, wasRoot: Node, wasVersion: Int): Boolean {
         val root = root(v)
         return wasRoot === root && wasVersion == root.version
     }
@@ -205,8 +204,8 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         }
     }
 
-    private fun merge(a: Node?, b: Node?): Node? {
-        if (a == null) return b
+    private fun merge(a: Node?, b: Node?): Node {
+        if (a == null) return b!!
         if (b == null) return a
         return if (a.priority < b.priority) {
             a.right = merge(a.right, b)
@@ -236,7 +235,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 }
 
-internal inline fun Node.recalculate() {
+internal fun Node.recalculate() {
     size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
     val shouldHaveNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
     hasNonTreeEdges = shouldHaveNonTreeEdges
@@ -249,16 +248,6 @@ internal inline fun Node.recalculate() {
     hasCurrentLevelTreeEdges = currentLevelTreeEdge != NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
 }
 
-internal fun Node.recalculateUp() {
-    recalculate()
-    parent?.recalculateUp()
-}
-
-internal inline fun Node.update(body: Node.() -> Unit) {
-    body()
-    recalculateUp()
-}
-
 internal fun Node.recalculateUpNonTreeEdges() {
     hasNonTreeEdges = true
     parent?.recalculateUpNonTreeEdges()
@@ -266,5 +255,7 @@ internal fun Node.recalculateUpNonTreeEdges() {
 
 internal inline fun Node.updateNonTreeEdges(body: Node.() -> Unit) {
     body()
+    // TODO: we can recalculate the flags only when the set was `isEmpty` for additions or `size == 1` for removals.
+    // TODO: you have to modify the current hash tables to support this optimization.
     recalculateUpNonTreeEdges()
 }

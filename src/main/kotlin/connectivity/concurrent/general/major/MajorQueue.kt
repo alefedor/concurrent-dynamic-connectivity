@@ -8,8 +8,9 @@ class MajorQueue {
     private val dummy = MajorQueueNode(AtomicReference())
     @Volatile
     private var head = dummy // no need in AtomicReference, because there is only one thread that can read
-    private var tail: AtomicReference<MajorQueueNode> = AtomicReference(dummy)
+    private var tail: AtomicReference<MajorQueueNode> = AtomicReference(dummy) // TODO: use atomicfu instead
 
+    // single-consumer
     fun pop(): Edge {
         val r = head.next.get() ?: return NO_EDGE
         head = r.node

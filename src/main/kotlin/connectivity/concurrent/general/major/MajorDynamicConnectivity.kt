@@ -27,13 +27,15 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         ranks[edge] = 0
         val status = AtomicReference(EdgeStatus.INITIAL)
         statuses[edge] = status
+        // TODO: DO NOT CREATE ATOMIC REFERENCES, use `statuses.replace` instead
         while (true) {
+            // TODO: move this check to the end of the loop
             val currentStatus = status.get()
             if (currentStatus != EdgeStatus.INITIAL && currentStatus != EdgeStatus.SPECIAL)
                 return // someone already finished the edge addition
             if (!connected(u, v)) {
                 // change status to SPECIAL before locking
-                if (currentStatus != EdgeStatus.SPECIAL) {
+                if (currentStatus != EdgeStatus.SPECIAL) { // TODO remove this optimization check?
                     if (!status.compareAndSet(EdgeStatus.INITIAL, EdgeStatus.SPECIAL)) {
                         if (status.get() != EdgeStatus.SPECIAL)
                             return // someone already finished the edge addition

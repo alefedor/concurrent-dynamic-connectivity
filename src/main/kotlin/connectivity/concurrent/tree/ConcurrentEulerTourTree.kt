@@ -14,6 +14,11 @@ class ConcurrentETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: E
     val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet() else null // for storing non-tree edges in general case
     @Volatile
     var hasNonTreeEdges: Boolean = false // for traversal
+//    private var currentLevelTreeEdgeOrNodeId = 0L
+//    val isNode get() = currentLevelTreeEdgeOrNodeId < 0
+//    var nodeId: Int
+//        get() = -currentLevelTreeEdgeOrNodeId.toInt()
+//        set(value) { currentLevelTreeEdgeOrNodeId = (-value).toLong() }
     @Volatile
     var currentLevelTreeEdge: Edge = treeEdge
     @Volatile
@@ -25,14 +30,13 @@ class ConcurrentETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: E
 class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<ConcurrentETTNode>
     private val edgeToNode = SequentialEdgeMap<ConcurrentETTNode>()
-    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle(random)
+        priorities.shuffle()
         nodes = Array(size) { ConcurrentETTNode(priorities[it]) }
     }
 
@@ -63,12 +67,12 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
         // create nodes corresponding to two directed copies of the new edge
         val uvNode = ConcurrentETTNode(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = ConcurrentETTNode(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -129,8 +133,10 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val uRootVersion = uRoot.version
             val vRoot = root(v)
             val vRootVersion = vRoot.version
+            // TODO we cun support root path short-paths since we re-read roots anyway
             if (!rereadRoot(u, uRoot, uRootVersion)) continue
             if (vRoot != uRoot) return false
+            // TODO: can we write something like `if (uRoot.priority < vRoot.priority) return true`?
             if (!rereadRoot(v, vRoot, vRootVersion)) continue
             return true
         }

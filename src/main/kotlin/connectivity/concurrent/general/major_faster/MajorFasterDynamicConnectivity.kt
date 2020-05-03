@@ -2,10 +2,7 @@ package connectivity.concurrent.general.major_faster
 
 import connectivity.*
 import connectivity.sequential.general.DynamicConnectivity
-import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.math.max
-import kotlin.math.min
 
 class MajorFasterDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<MajorConcurrentEulerTourTree>
@@ -39,7 +36,7 @@ class MajorFasterDynamicConnectivity(private val size: Int) : DynamicConnectivit
                             return // someone already finished the edge addition
                     }
                 }
-                lockComponents(u, v) {
+                withLockedComponents(u, v) {
                     doAddEdge(u, v)
                     return
                 }
@@ -109,7 +106,7 @@ class MajorFasterDynamicConnectivity(private val size: Int) : DynamicConnectivit
             val status = statuses[edge]!!
             val currentStatus = status.get()
             if (currentStatus == EdgeStatus.TREE_EDGE) {
-                lockComponents(u, v) {
+                withLockedComponents(u, v) {
                     doRemoveEdge(u, v)
                     return
                 }
@@ -391,7 +388,7 @@ class MajorFasterDynamicConnectivity(private val size: Int) : DynamicConnectivit
 
     private fun root(u: Int): Node = levels[0].root(u)
 
-    private inline fun lockComponents(a: Int, b: Int, body: () -> Unit) {
+    private inline fun withLockedComponents(a: Int, b: Int, body: () -> Unit) {
         var u = a
         var v = b
 

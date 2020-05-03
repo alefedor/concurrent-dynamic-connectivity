@@ -2,10 +2,8 @@ package connectivity
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
-import org.jctools.maps.NonBlockingHashMap
 import thirdparty.boundary.NonBlockingHashSetLong
 import thirdparty.jctools.NonBlockingHashMapLong
-
 
 typealias Edge = Long
 typealias SequentialEdgeMap<T> = Long2ReferenceOpenHashMap<T>

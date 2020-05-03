@@ -2,6 +2,7 @@ package connectivity.concurrent.tree
 
 import connectivity.*
 import connectivity.NO_EDGE
+import connectivity.concurrent.general.major.Node
 import connectivity.sequential.tree.TreeDynamicConnectivity
 import java.util.*
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -24,14 +25,13 @@ class ReadWriteFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, t
 class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<ReadWriteFineGrainedETTNode>
     private val edgeToNode = ConcurrentEdgeMap<ReadWriteFineGrainedETTNode>()
-    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle(random)
+        priorities.shuffle()
         nodes = Array(size) { ReadWriteFineGrainedETTNode(priorities[it]) }
     }
 
@@ -60,12 +60,12 @@ class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity
 
         // create nodes corresponding to two directed copies of the new edge
         val uvNode = ReadWriteFineGrainedETTNode(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = ReadWriteFineGrainedETTNode(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -118,7 +118,7 @@ class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity
         return Pair(component1, component2)
     }
 
-    override fun connected(u: Int, v: Int): Boolean = root(u) == root(v)
+    override fun connected(u: Int, v: Int): Boolean = root(u) === root(v)
 
     fun connected(u: Int, v: Int, additionalRoot: ReadWriteFineGrainedETTNode?): Boolean {
         return root(u, additionalRoot) === root(v, additionalRoot)
@@ -217,7 +217,12 @@ internal fun ReadWriteFineGrainedETTNode.recalculateUp() {
     parent?.recalculateUp()
 }
 
-internal inline fun ReadWriteFineGrainedETTNode.update(body: ReadWriteFineGrainedETTNode.() -> Unit) {
+internal fun ReadWriteFineGrainedETTNode.recalculateUpNonTreeEdges() {
+    hasNonTreeEdges = true
+    parent?.recalculateUpNonTreeEdges()
+}
+
+internal inline fun ReadWriteFineGrainedETTNode.updateNonTreeEdges(body: ReadWriteFineGrainedETTNode.() -> Unit) {
     body()
-    recalculateUp()
+    recalculateUpNonTreeEdges()
 }

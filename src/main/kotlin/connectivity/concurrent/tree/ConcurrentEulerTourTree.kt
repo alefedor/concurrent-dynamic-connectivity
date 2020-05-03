@@ -12,11 +12,8 @@ class ConcurrentETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: E
     var right: ConcurrentETTNode? = null
     var size: Int = 1
     val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet() else null // for storing non-tree edges in general case
-    @Volatile
     var hasNonTreeEdges: Boolean = false // for traversal
-    @Volatile
     var currentLevelTreeEdge: Edge = treeEdge
-    @Volatile
     var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
     @Volatile
     var version = 0
@@ -25,14 +22,13 @@ class ConcurrentETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: E
 class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<ConcurrentETTNode>
     private val edgeToNode = SequentialEdgeMap<ConcurrentETTNode>()
-    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle(random)
+        priorities.shuffle()
         nodes = Array(size) { ConcurrentETTNode(priorities[it]) }
     }
 
@@ -63,12 +59,12 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
         // create nodes corresponding to two directed copies of the new edge
         val uvNode = ConcurrentETTNode(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = ConcurrentETTNode(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -130,7 +126,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val vRoot = root(v)
             val vRootVersion = vRoot.version
             if (!rereadRoot(u, uRoot, uRootVersion)) continue
-            if (vRoot != uRoot) return false
+            if (vRoot !== uRoot) return false
             if (!rereadRoot(v, vRoot, vRootVersion)) continue
             return true
         }
@@ -243,7 +239,12 @@ internal fun ConcurrentETTNode.recalculateUp() {
     parent?.recalculateUp()
 }
 
-internal inline fun ConcurrentETTNode.update(body: ConcurrentETTNode.() -> Unit) {
+internal fun ConcurrentETTNode.recalculateUpNonTreeEdges() {
+    hasNonTreeEdges = true
+    parent?.recalculateUpNonTreeEdges()
+}
+
+internal inline fun ConcurrentETTNode.updateNonTreeEdges(body: ConcurrentETTNode.() -> Unit) {
     body()
-    recalculateUp()
+    recalculateUpNonTreeEdges()
 }

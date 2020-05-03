@@ -1,6 +1,7 @@
 package benchmarks.util
 
 import connectivity.sequential.general.DynamicConnectivity
+import kotlinx.atomicfu.atomic
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
@@ -13,7 +14,7 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
 
     private val threads: Array<Thread>
 
-    private val operationsExecuted = AtomicInteger(0)
+    private val operationsExecuted = atomic(0)
 
     @Volatile
     private var start = false

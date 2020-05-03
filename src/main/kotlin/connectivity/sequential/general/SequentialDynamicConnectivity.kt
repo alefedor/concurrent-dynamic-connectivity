@@ -30,10 +30,10 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
         if (!levels[0].connected(u, v)) {
             levels[0].addEdge(u, v)
         } else {
-            levels[0].node(u).update {
+            levels[0].node(u).updateNonTreeEdges {
                 nonTreeEdges!!.add(edge)
             }
-            levels[0].node(v).update {
+            levels[0].node(v).updateNonTreeEdges {
                 nonTreeEdges!!.add(edge)
             }
         }
@@ -48,10 +48,10 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
         val isNonTreeEdge = level.node(u).nonTreeEdges!!.contains(edge)
         if (isNonTreeEdge) {
             // just delete the non-tree edge
-            level.node(u).update {
+            level.node(u).updateNonTreeEdges {
                 nonTreeEdges!!.remove(edge)
             }
-            level.node(v).update {
+            level.node(v).updateNonTreeEdges {
                 nonTreeEdges!!.remove(edge)
             }
             return
@@ -124,11 +124,11 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
                 // remove edge from another node too
                 val firstNode = level.node(edge.u())
                 if (firstNode != node)
-                    firstNode.update {
+                    firstNode.updateNonTreeEdges {
                         nonTreeEdges!!.remove(edge)
                     }
                 else
-                    level.node(edge.v()).update {
+                    level.node(edge.v()).updateNonTreeEdges {
                         nonTreeEdges!!.remove(edge)
                     }
                 iterator.remove()
@@ -139,10 +139,10 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
                     break
                 } else {
                     // promote non-tree edge
-                    levels[rank + 1].node(edge.u()).update {
+                    levels[rank + 1].node(edge.u()).updateNonTreeEdges {
                         nonTreeEdges!!.add(edge)
                     }
-                    levels[rank + 1].node(edge.v()).update {
+                    levels[rank + 1].node(edge.v()).updateNonTreeEdges {
                         nonTreeEdges!!.add(edge)
                     }
                     ranks[edge] = rank + 1

@@ -1,13 +1,15 @@
 package benchmarks.util
 
 import connectivity.sequential.general.DynamicConnectivity
+import kotlinx.atomicfu.AtomicInt
+import kotlinx.atomicfu.atomic
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 
 class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicConnectivity) {
     private val dcp = dcpConstructor(scenario.nodes)
 
-    private val pos = AtomicInteger()
+    private val pos: AtomicInt = atomic(1)
     private val threads: Array<Thread>
 
     @Volatile
@@ -17,7 +19,7 @@ class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -
         for (edge in scenario.initialEdges)
             dcp.addEdge(edge.from(), edge.to())
 
-        val threadsInitialized = AtomicInteger(0)
+        val threadsInitialized = AtomicInteger(1)
 
         threads = Array(scenario.threads) { threadId ->
             Thread {

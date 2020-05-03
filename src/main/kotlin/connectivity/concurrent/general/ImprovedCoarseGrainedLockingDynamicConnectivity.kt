@@ -6,9 +6,8 @@ import connectivity.sequential.general.DynamicConnectivity
 import connectivity.concurrent.tree.ConcurrentEulerTourTree
 import connectivity.concurrent.tree.ConcurrentETTNode
 import connectivity.concurrent.tree.recalculate
-import connectivity.concurrent.tree.update
-import kotlin.math.max
-import kotlin.math.min
+import connectivity.concurrent.tree.updateNonTreeEdges
+import connectivity.sequential.tree.updateNonTreeEdges
 
 class ImprovedCoarseGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<ConcurrentEulerTourTree>
@@ -31,10 +30,10 @@ class ImprovedCoarseGrainedLockingDynamicConnectivity(private val size: Int) : D
         if (!levels[0].connectedSimple(u, v, null)) {
             levels[0].addEdge(u, v)
         } else {
-            levels[0].node(u).update {
+            levels[0].node(u).updateNonTreeEdges {
                 nonTreeEdges!!.add(edge)
             }
-            levels[0].node(v).update {
+            levels[0].node(v).updateNonTreeEdges {
                 nonTreeEdges!!.add(edge)
             }
         }
@@ -50,10 +49,10 @@ class ImprovedCoarseGrainedLockingDynamicConnectivity(private val size: Int) : D
         val isNonTreeEdge = level.node(u).nonTreeEdges!!.contains(edge)
         if (isNonTreeEdge) {
             // just delete the non-tree edge
-            level.node(u).update {
+            level.node(u).updateNonTreeEdges {
                 nonTreeEdges!!.remove(edge)
             }
-            level.node(v).update {
+            level.node(v).updateNonTreeEdges {
                 nonTreeEdges!!.remove(edge)
             }
             return
@@ -134,11 +133,11 @@ class ImprovedCoarseGrainedLockingDynamicConnectivity(private val size: Int) : D
                 // remove edge from another node too
                 val firstNode = level.node(edge.u())
                 if (firstNode != node)
-                    firstNode.update {
+                    firstNode.updateNonTreeEdges {
                         nonTreeEdges!!.remove(edge)
                     }
                 else
-                    level.node(edge.v()).update {
+                    level.node(edge.v()).updateNonTreeEdges {
                         nonTreeEdges!!.remove(edge)
                     }
                 iterator.remove()
@@ -149,10 +148,10 @@ class ImprovedCoarseGrainedLockingDynamicConnectivity(private val size: Int) : D
                     break
                 } else {
                     // promote non-tree edge
-                    levels[rank + 1].node(edge.u()).update {
+                    levels[rank + 1].node(edge.u()).updateNonTreeEdges {
                         nonTreeEdges!!.add(edge)
                     }
-                    levels[rank + 1].node(edge.v()).update {
+                    levels[rank + 1].node(edge.v()).updateNonTreeEdges {
                         nonTreeEdges!!.add(edge)
                     }
                     ranks[edge] = rank + 1

@@ -27,14 +27,13 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE
 class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<Node>
     private val edgeToNode = ConcurrentEdgeMap<Node>()
-    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle(random)
+        priorities.shuffle()
         nodes = Array(size) { Node(priorities[it]) }
     }
 
@@ -65,12 +64,12 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
         // create nodes corresponding to two directed copies of the new edge
         val uvNode = Node(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = Node(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -132,7 +131,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val vRoot = root(v)
             val vRootVersion = vRoot.version
             if (!rereadRoot(u, uRoot, uRootVersion)) continue
-            if (vRoot != uRoot) return false
+            if (vRoot !== uRoot) return false
             if (!rereadRoot(v, vRoot, vRootVersion)) continue
             return true
         }
@@ -247,16 +246,6 @@ internal inline fun Node.recalculate() {
             hasNonTreeEdges = true
     }
     hasCurrentLevelTreeEdges = currentLevelTreeEdge != NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
-}
-
-internal fun Node.recalculateUp() {
-    recalculate()
-    parent?.recalculateUp()
-}
-
-internal inline fun Node.update(body: Node.() -> Unit) {
-    body()
-    recalculateUp()
 }
 
 internal fun Node.recalculateUpNonTreeEdges() {

@@ -2,7 +2,7 @@ package benchmarks.util
 
 import kotlin.random.Random
 
-val OVERHEAD_RATIO = 4
+val OVERHEAD_RATIO = 6
 
 class RandomScenarioGenerator {
     private val rnd = Random(343)

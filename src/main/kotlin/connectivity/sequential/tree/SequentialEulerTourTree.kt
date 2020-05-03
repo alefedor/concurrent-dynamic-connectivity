@@ -2,6 +2,7 @@ package connectivity.sequential.tree
 
 import connectivity.*
 import connectivity.NO_EDGE
+import connectivity.concurrent.general.major.Node
 import java.util.*
 import kotlin.random.Random
 
@@ -25,14 +26,13 @@ class SequentialETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: E
 class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<SequentialETTNode>
     private val edgeToNode = SequentialEdgeMap<SequentialETTNode>()
-    private val random = Random(0)
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle(random)
+        priorities.shuffle()
         nodes = Array(size) { SequentialETTNode(priorities[it]) }
     }
 
@@ -53,8 +53,8 @@ class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val vuEdge = makeDirectedEdge(v, u)
 
         // create nodes corresponding to two directed copies of the new edge
-        val uvNode = SequentialETTNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE)
-        val vuNode = SequentialETTNode(size + random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE)
+        val uvNode = SequentialETTNode(size + Random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE)
+        val vuNode = SequentialETTNode(size + Random.nextInt(10 * size), false, if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE)
         edgeToNode[uvEdge] = uvNode
         edgeToNode[vuEdge] = vuNode
 
@@ -95,7 +95,7 @@ class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         edgeToNode.remove(vuEdge)
     }
 
-    override fun connected(u: Int, v: Int): Boolean = root(u) == root(v)
+    override fun connected(u: Int, v: Int): Boolean = root(u) === root(v)
 
     fun root(u: Int): SequentialETTNode = root(nodes[u])
 
@@ -189,7 +189,12 @@ internal fun SequentialETTNode.recalculateUp() {
     parent?.recalculateUp()
 }
 
-internal inline fun SequentialETTNode.update(body: SequentialETTNode.() -> Unit) {
+internal fun SequentialETTNode.recalculateUpNonTreeEdges() {
+    hasNonTreeEdges = true
+    parent?.recalculateUpNonTreeEdges()
+}
+
+internal inline fun SequentialETTNode.updateNonTreeEdges(body: SequentialETTNode.() -> Unit) {
     body()
-    recalculateUp()
+    recalculateUpNonTreeEdges()
 }

@@ -2,6 +2,7 @@ package connectivity.concurrent.tree
 
 import connectivity.*
 import connectivity.NO_EDGE
+import connectivity.concurrent.general.major.Node
 import connectivity.sequential.tree.TreeDynamicConnectivity
 import kotlin.random.Random
 
@@ -20,14 +21,13 @@ class FineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: 
 class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<FineGrainedETTNode>
     private val edgeToNode = ConcurrentEdgeMap<FineGrainedETTNode>()
-    private val random = Random
 
     init {
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle(random)
+        priorities.shuffle()
         nodes = Array(size) { FineGrainedETTNode(priorities[it]) }
     }
 
@@ -56,12 +56,12 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
         // create nodes corresponding to two directed copies of the new edge
         val uvNode = FineGrainedETTNode(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = FineGrainedETTNode(
-            size + random.nextInt(10 * size),
+            size + Random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -114,7 +114,7 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         return Pair(component1, component2)
     }
 
-    override fun connected(u: Int, v: Int): Boolean = root(u) == root(v)
+    override fun connected(u: Int, v: Int): Boolean = root(u) === root(v)
 
     fun connected(u: Int, v: Int, additionalRoot: FineGrainedETTNode?): Boolean {
         return root(u, additionalRoot) === root(v, additionalRoot)
@@ -213,7 +213,12 @@ internal fun FineGrainedETTNode.recalculateUp() {
     parent?.recalculateUp()
 }
 
-internal inline fun FineGrainedETTNode.update(body: FineGrainedETTNode.() -> Unit) {
+internal fun FineGrainedETTNode.recalculateUpNonTreeEdges() {
+    hasNonTreeEdges = true
+    parent?.recalculateUpNonTreeEdges()
+}
+
+internal inline fun FineGrainedETTNode.updateNonTreeEdges(body: FineGrainedETTNode.() -> Unit) {
     body()
-    recalculateUp()
+    recalculateUpNonTreeEdges()
 }

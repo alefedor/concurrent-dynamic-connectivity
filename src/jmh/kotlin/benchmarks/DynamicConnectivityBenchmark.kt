@@ -41,7 +41,7 @@ open class DynamicConnectivityBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = RandomScenarioGenerator().generate(graph, workers, totalSize / workers, 1, readWeight)
+        scenario = RandomScenarioGenerator().generate(graph, workers, totalSize / workers, 1, readWeight, true)
     }
 
     @Setup(Level.Invocation)
@@ -84,7 +84,7 @@ open class LockElidfsionDynafgmicConngffectivityBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
-        scenario = RandomScenarioGenerator().generate(graph, workers, totalSize / workers, 1, readWeight)
+        scenario = RandomScenarioGenerator().generate(graph, workers, totalSize / workers, 1, readWeight, true)
     }
 
     @Setup(Level.Invocation)

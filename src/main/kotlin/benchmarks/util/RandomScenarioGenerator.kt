@@ -7,7 +7,7 @@ val OVERHEAD_RATIO = 6
 class RandomScenarioGenerator {
     private val rnd = Random(343)
 
-    fun generate(graph: Graph, threads: Int, sizePerThread: Int, updateWeight: Int, readWeight: Int): Scenario {
+    fun generate(graph: Graph, threads: Int, sizePerThread: Int, updateWeight: Int, readWeight: Int, makeOverhead: Boolean): Scenario {
         val initialEdgesNumber = graph.edges.size / 2
         val initialEdges = graph.edges.copyOfRange(0, initialEdgesNumber)
 
@@ -17,7 +17,7 @@ class RandomScenarioGenerator {
             val candidatesToAdd: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[initialEdgesNumber + thread * edgesPerThread + it] }
             val candidatesToRemove: MutableList<Long> = MutableList(edgesPerThread) { graph.edges[thread * edgesPerThread + it] }
 
-            LongArray(sizePerThread * OVERHEAD_RATIO) {
+            LongArray(sizePerThread * (if (makeOverhead) OVERHEAD_RATIO else 1)) {
                 var type: QueryType
 
                 while (true) {

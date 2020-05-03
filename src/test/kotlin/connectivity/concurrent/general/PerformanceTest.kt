@@ -17,18 +17,19 @@ class PerformanceTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
     @Test
     fun test() {
         val iterations = 40
-        val time = (0 until iterations).map {
+        val warmupIterations = 10
+        val time = (0 until (iterations + warmupIterations)).map {
             measureTimeMillis {
                 ScenarioExecutor(scenario, globalDcpConstructor.construct).run()
             }
-        }.drop(10).average()
+        }.drop(warmupIterations).average()
         println("$globalDcpConstructor: $time ms")
     }
 
     companion object {
         private val graph = randomDividedGraph(10, 500, 8000)
 
-        private val scenario = RandomScenarioGenerator().generate(graph, 1, 100000, 1, 1)
+        private val scenario = RandomScenarioGenerator().generate(graph, 1, 100000, 1, 1, true)
 
         @JvmStatic
         @Parameterized.Parameters

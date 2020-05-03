@@ -25,7 +25,7 @@ class TwoLevelScenarioGenerator {
         }
 
         val interGraph = Graph(nodesPerComponent * components, interEdges)
-        val scenario = randomScenarioGenerator.generate(interGraph, threads, sizePerThread, 1, 0)
+        val scenario = randomScenarioGenerator.generate(interGraph, threads, sizePerThread, 1, 0, true)
 
         val initialEdges = LongArray(components * nodesPerComponent * (nodesPerComponent - 1) / 2 + scenario.initialEdges.size)
         var pos = 0

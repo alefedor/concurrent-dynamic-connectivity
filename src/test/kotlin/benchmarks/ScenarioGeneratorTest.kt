@@ -36,7 +36,7 @@ class ScenarioGeneratorTest {
 
     @Test
     fun randomScenarioGeneratorTest() {
-        val scenario = RandomScenarioGenerator().generate(graph, 3, 6, 1, 1)
+        val scenario = RandomScenarioGenerator().generate(graph, 3, 6, 1, 1, false)
         assertEquals(8, scenario.initialEdges.size)
         assertEquals(3, scenario.queries.size)
         assertEquals(6, scenario.queries[0].size)

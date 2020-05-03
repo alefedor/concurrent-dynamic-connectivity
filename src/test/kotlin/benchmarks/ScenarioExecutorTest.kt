@@ -31,7 +31,7 @@ class ScenarioExecutorTest {
         )
 
         val graph = Graph(9, edges)
-        val scenario = RandomScenarioGenerator().generate(graph, 3, 6, 1, 1)
+        val scenario = RandomScenarioGenerator().generate(graph, 3, 6, 1, 1, true)
 
         repeat(1000) {
             val executor = ScenarioExecutor(scenario, ::ImprovedCoarseGrainedLockingDynamicConnectivity)

@@ -16,7 +16,7 @@ private const val n1 = 5
 private const val n2 = 7
 private const val n3 = 9
 
-private const val actorsPerThread = 3
+private const val actorsPerThread = 7
 private const val iterations = 400
 private const val invocations = 1000
 

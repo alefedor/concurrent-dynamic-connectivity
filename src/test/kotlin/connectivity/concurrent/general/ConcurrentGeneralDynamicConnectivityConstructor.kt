@@ -1,6 +1,7 @@
 package connectivity.concurrent.general
 
 import connectivity.concurrent.general.major.MajorDynamicConnectivity
+import connectivity.concurrent.general.major_coarse_grained.MajorCoarseGrainedDynamicConnectivity
 import connectivity.sequential.general.DynamicConnectivity
 
 enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
@@ -11,6 +12,7 @@ enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size:
     NBReadsCoarseGrainedLockingDynamicConnectivity(::NBReadsCoarseGrainedLockingDynamicConnectivity),
     NBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
+    MajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
 }
 
 var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.values()[0]

@@ -9,7 +9,7 @@ import connectivity.concurrent.tree.recalculate
 import connectivity.concurrent.tree.updateNonTreeEdges
 import connectivity.sequential.tree.updateNonTreeEdges
 
-class ImprovedCoarseGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
+class NBReadsCoarseGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<ConcurrentEulerTourTree>
     private val ranks = SequentialEdgeMap<Int>()
 
@@ -87,10 +87,10 @@ class ImprovedCoarseGrainedLockingDynamicConnectivity(private val size: Int) : D
                 break
             } else {
                 // linearization point, do an actual split on this level
-                uRoot.parent = null
-                vRoot.parent = null
                 uRoot.version.inc()
                 vRoot.version.inc()
+                uRoot.parent = null
+                vRoot.parent = null
             }
         }
     }

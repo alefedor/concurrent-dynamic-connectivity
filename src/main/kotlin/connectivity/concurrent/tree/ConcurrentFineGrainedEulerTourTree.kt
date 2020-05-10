@@ -48,11 +48,11 @@ class ConcurrentFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivit
 
         // linearization point
         if (uRoot.priority < vRoot.priority) {
+            uRoot.version.inc()
             vRoot.parent = uRoot
-            uRoot.version++
         } else {
+            vRoot.version.inc()
             uRoot.parent = vRoot
-            vRoot.version++
         }
 
         val uvEdge = makeDirectedEdge(u, v)
@@ -107,10 +107,10 @@ class ConcurrentFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivit
         if (doSplit) {
             // linearization point
             // one of them was already null and the other lead to another tree
-            component1.parent = null
-            component2.parent = null
             component1.version.inc()
             component2.version.inc()
+            component1.parent = null
+            component2.parent = null
         }
 
         // remove two directed copies of the deleted edge
@@ -127,9 +127,11 @@ class ConcurrentFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivit
             val vRoot = root(v)
             val vRootVersion = vRoot.version
             if (!rereadRoot(u, uRoot, uRootVersion)) continue
-            if (vRoot !== uRoot) return false
-            if (!rereadRoot(v, vRoot, vRootVersion)) continue
-            return true
+            if (uRoot !== vRoot) {
+                if (!rereadRoot(v, vRoot, vRootVersion)) continue
+                if (!rereadRoot(u, uRoot, uRootVersion)) continue
+            }
+            return uRoot === vRoot
         }
     }
 

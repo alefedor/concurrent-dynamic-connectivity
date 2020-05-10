@@ -14,11 +14,11 @@ import org.junit.runners.Parameterized
 enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
     SequentialDynamicConnectivity(::SequentialDynamicConnectivity),
     CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
-    ImprovedCoarseGrainedLockingDynamicConnectivity(::ImprovedCoarseGrainedLockingDynamicConnectivity),
+    NBReadsCoarseGrainedLockingDynamicConnectivity(::NBReadsCoarseGrainedLockingDynamicConnectivity),
     CoarseGrainedReadWriteLockingDynamicConnectivity(::CoarseGrainedReadWriteLockingDynamicConnectivity),
     FineGrainedLockingDynamicConnectivity(::FineGrainedLockingDynamicConnectivity),
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
-    ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),
+    NBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
 }
 

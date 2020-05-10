@@ -8,7 +8,7 @@ import connectivity.sequential.general.DynamicConnectivity
 import connectivity.sequential.tree.updateNonTreeEdges
 
 
-class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
+class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<ConcurrentFineGrainedEulerTourTree>
     private val ranks = ConcurrentEdgeMap<Int>()
 
@@ -84,10 +84,10 @@ class ImprovedFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyn
                     break
                 } else {
                     // linearization point, do an actual split on this level
-                    uRoot.parent = null
-                    vRoot.parent = null
                     uRoot.version.inc()
                     vRoot.version.inc()
+                    uRoot.parent = null
+                    vRoot.parent = null
                 }
             }
         }

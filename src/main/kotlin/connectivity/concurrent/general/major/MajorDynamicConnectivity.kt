@@ -175,10 +175,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     break
                 } else {
                     // linearization point, do an actual split on this level
-                    uRoot.parent = null
-                    vRoot.parent = null
                     uRoot.version.inc()
                     vRoot.version.inc()
+                    uRoot.parent = null
+                    vRoot.parent = null
                 }
                 commonRoot.removeEdgeOperation = null
             } else {
@@ -200,10 +200,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     break
                 } else {
                     // linearization point, do an actual split on this level
-                    uRoot.parent = null
-                    vRoot.parent = null
                     uRoot.version.inc()
                     vRoot.version.inc()
+                    uRoot.parent = null
+                    vRoot.parent = null
                 }
             }
         }

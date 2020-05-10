@@ -2,7 +2,6 @@ package connectivity.sequential.general
 
 import connectivity.concurrent.general.*
 import connectivity.concurrent.general.major.MajorDynamicConnectivity
-import connectivity.concurrent.general.major_faster.MajorFasterDynamicConnectivity
 import connectivity.sequential.DynamicConnectivityScenarioGenerator
 import connectivity.sequential.OperationType
 import connectivity.sequential.ScenarioType
@@ -21,7 +20,6 @@ enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> D
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
     ImprovedFineGrainedLockingDynamicConnectivity(::ImprovedFineGrainedLockingDynamicConnectivity),
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
-    //MajorFasterDynamicConnectivity(::MajorFasterDynamicConnectivity)
 }
 
 @RunWith(Parameterized::class)

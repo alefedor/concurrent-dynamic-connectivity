@@ -2,9 +2,8 @@ package thirdparty.Aksenov239.fc;
 
 import connectivity.sequential.general.DynamicConnectivity;
 import connectivity.sequential.general.SequentialDynamicConnectivity;
-import org.openjdk.jmh.logic.BlackHole;
 import sun.misc.Unsafe;
-import thirdparty.Aksenov239.sequential.SequentialDynamicGraph;
+import thirdparty.Aksenov239.BlackHole;
 
 import java.lang.reflect.Constructor;
 

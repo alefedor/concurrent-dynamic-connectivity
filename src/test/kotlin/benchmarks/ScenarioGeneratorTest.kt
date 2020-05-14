@@ -63,7 +63,7 @@ class ScenarioGeneratorTest {
         runScenario(scenario)
         assertEquals(3 * 6, scenario.nodes)
         assertEquals(3 * (6 * 5) / 2 + 3 * 2, scenario.initialEdges.size)
-        assertEquals(6, scenario.queries[0].size)
+        assertEquals(6 * OVERHEAD_RATIO, scenario.queries[0].size)
     }
 
     private fun runScenario(scenario: Scenario): Set<Long> {

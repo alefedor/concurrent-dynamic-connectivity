@@ -6,10 +6,12 @@ import kotlinx.atomicfu.atomic
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 
+private const val BATCH_SIZE = 10 // increase counter in batches to reduce contention
+
 class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicConnectivity) {
     private val dcp = dcpConstructor(scenario.nodes)
 
-    private val pos: AtomicInt = atomic(1)
+    private val pos: AtomicInt = atomic(0)
     private val threads: Array<Thread>
 
     @Volatile
@@ -29,22 +31,28 @@ class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -
 
                 while (!start); // wait until start
 
+                val queriesSize = queries.size
+
                 while (true) {
-                    val id = pos.incrementAndGet()
-                    if (id >= queries.size) break
-                    val query = queries[id]
-                    when (query.type()) {
-                        QueryType.CONNECTED -> {
-                            dcp.connected(query.from(), query.to())
+                    val idStart = pos.getAndAdd(BATCH_SIZE)
+                    if (idStart >= queriesSize) break
+
+                    for (id in idStart until (idStart + BATCH_SIZE)) {
+                        if (id >= queriesSize) break
+                        val query = queries[id]
+                        when (query.type()) {
+                            QueryType.CONNECTED -> {
+                                dcp.connected(query.from(), query.to())
+                            }
+                            QueryType.ADD_EDGE -> {
+                                dcp.addEdge(query.from(), query.to())
+                            }
+                            QueryType.REMOVE_EDGE -> {
+                                dcp.removeEdge(query.from(), query.to())
+                            }
                         }
-                        QueryType.ADD_EDGE -> {
-                            dcp.addEdge(query.from(), query.to())
-                        }
-                        QueryType.REMOVE_EDGE -> {
-                            dcp.removeEdge(query.from(), query.to())
-                        }
+                        work(workAmount)
                     }
-                    work(workAmount)
                 }
             }
         }

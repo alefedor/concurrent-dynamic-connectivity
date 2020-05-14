@@ -6,6 +6,7 @@ import connectivity.concurrent.tree.*
 import connectivity.concurrent.tree.recalculate
 import connectivity.sequential.general.DynamicConnectivity
 import connectivity.sequential.tree.updateNonTreeEdges
+import java.util.concurrent.locks.StampedLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -192,8 +193,8 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
                 uRoot = vRoot
                 vRoot = tmpNode
             }
-            uRoot.lock!!.read {
-                vRoot.lock!!.read {
+            uRoot.lock!!.read(true) {
+                vRoot.lock!!.read(uRoot != vRoot) {
                     if (uRoot == root(u) && vRoot == root(v)) {
                         return action()
                     }
@@ -219,12 +220,38 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
                 uRoot = vRoot
                 vRoot = tmpNode
             }
-            uRoot.lock!!.write {
-                vRoot.lock!!.write {
+            uRoot.lock!!.write(true) {
+                vRoot.lock!!.write(uRoot != vRoot) {
                     if (uRoot == root(u) && vRoot == root(v)) {
                         return action()
                     }
                 }
+            }
+        }
+    }
+
+    private inline fun <R> StampedLock.read(check: Boolean, action: () -> R): R {
+        if (!check) {
+            return action()
+        } else {
+            val stamp = this.readLock()
+            try {
+                return action()
+            } finally {
+                this.unlockRead(stamp)
+            }
+        }
+    }
+
+    private inline fun <R> StampedLock.write(check: Boolean, action: () -> R): R {
+        if (!check) {
+            return action()
+        } else {
+            val stamp = this.writeLock()
+            try {
+                return action()
+            } finally {
+                this.unlockWrite(stamp)
             }
         }
     }

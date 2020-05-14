@@ -6,6 +6,7 @@ import connectivity.concurrent.general.major.Node
 import connectivity.sequential.tree.TreeDynamicConnectivity
 import java.util.*
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.concurrent.locks.StampedLock
 import kotlin.collections.HashSet
 import kotlin.random.Random
 
@@ -19,7 +20,7 @@ class ReadWriteFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, t
     var hasNonTreeEdges: Boolean = false // for traversal
     var currentLevelTreeEdge: Edge = treeEdge
     var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
-    val lock: ReentrantReadWriteLock? = if (isVertex) ReentrantReadWriteLock() else null
+    val lock: StampedLock? = if (isVertex) StampedLock() else null
 }
 
 class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {

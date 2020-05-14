@@ -46,7 +46,7 @@ open class DynamicConnectivityBenchmark {
 
     @Setup(Level.Invocation)
     fun initializeInvocation() {
-        scenarioExecutor = ScenarioExecutor(scenario, dcpConstructor.construct)
+        scenarioExecutor = ScenarioExecutor(scenario, { size -> dcpConstructor.construct(size, workers + 1)})
     }
 
     @Setup(Level.Invocation)
@@ -108,7 +108,7 @@ fun main() {
         .jvmArgs("-Xmx60g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("dcp_results.csv")
+        .result("dcp_fc_results.csv")
         .build()
     Runner(dcpOptions).run()
 

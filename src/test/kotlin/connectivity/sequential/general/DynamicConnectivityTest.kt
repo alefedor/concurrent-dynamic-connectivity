@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
-    SequentialDynamicConnectivity(::SequentialDynamicConnectivity),
+    /*SequentialDynamicConnectivity(::SequentialDynamicConnectivity),
     CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
     NBReadsCoarseGrainedLockingDynamicConnectivity(::NBReadsCoarseGrainedLockingDynamicConnectivity),
     CoarseGrainedReadWriteLockingDynamicConnectivity(::CoarseGrainedReadWriteLockingDynamicConnectivity),
@@ -21,7 +21,8 @@ enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> D
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
     NBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
-    MajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
+    MajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),*/
+    FCDynamicConnectivity( { size -> thirdparty.Aksenov239.fc.FCDynamicGraphFlush(size, 1) })
 }
 
 @RunWith(Parameterized::class)

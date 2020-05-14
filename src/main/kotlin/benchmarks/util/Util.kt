@@ -147,3 +147,5 @@ fun parseTxtFile(filename: String, gziped: Boolean): Graph {
     }
     return Graph(nodes, edges.toLongArray())
 }
+
+fun <T> addTrivialParameter(f: (Int) -> T): (Int, Int) -> T = { size, threads -> f(size) }

@@ -68,7 +68,7 @@ public class FCArray {
         }
     }
 
-    private static final int MAX_THREADS = 64;
+    private static final int MAX_THREADS = 128;
     private static final FCRequest[] tlReq = new FCRequest[MAX_THREADS + 1];
 
     public FCRequest[] loadRequests() {

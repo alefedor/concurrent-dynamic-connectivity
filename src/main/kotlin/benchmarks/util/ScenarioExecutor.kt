@@ -2,6 +2,8 @@ package benchmarks.util
 
 import connectivity.sequential.general.DynamicConnectivity
 import kotlinx.atomicfu.atomic
+import java.lang.AssertionError
+import java.lang.NullPointerException
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
@@ -29,34 +31,42 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
 
         threads = Array(scenario.threads) { threadId ->
             Thread {
-                val queries = scenario.queries[threadId]
+                try {
+                    val queries = scenario.queries[threadId]
 
-                threadsInitialized.incrementAndGet()
+                    threadsInitialized.incrementAndGet()
 
-                while (!start); // wait until start
+                    while (!start); // wait until start
 
-                var idRemainder = 0
+                    var idRemainder = 0
 
-                for (query in queries) {
-                    when (query.type()) {
-                        QueryType.CONNECTED -> {
-                            dcp.connected(query.from(), query.to())
+                    for (query in queries) {
+                        when (query.type()) {
+                            QueryType.CONNECTED -> {
+                                dcp.connected(query.from(), query.to())
+                            }
+                            QueryType.ADD_EDGE -> {
+                                dcp.addEdge(query.from(), query.to())
+                            }
+                            QueryType.REMOVE_EDGE -> {
+                                dcp.removeEdge(query.from(), query.to())
+                            }
                         }
-                        QueryType.ADD_EDGE -> {
-                            dcp.addEdge(query.from(), query.to())
-                        }
-                        QueryType.REMOVE_EDGE -> {
-                            dcp.removeEdge(query.from(), query.to())
+                        work(workAmount)
+
+                        idRemainder++
+                        if (idRemainder == BATCH_SIZE) {
+                            idRemainder = 0
+                            val ops = operationsExecuted.addAndGet(BATCH_SIZE)
+                            if (ops >= operationsNeeded) break
                         }
                     }
-                    work(workAmount)
-
-                    idRemainder++
-                    if (idRemainder == BATCH_SIZE) {
-                        idRemainder = 0
-                        val ops = operationsExecuted.addAndGet(BATCH_SIZE)
-                        if (ops >= operationsNeeded) break
-                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                } catch (e: NullPointerException) {
+                    e.printStackTrace()
+                } catch (e: AssertionError) {
+                    e.printStackTrace()
                 }
             }
         }

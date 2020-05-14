@@ -16,8 +16,8 @@ enum class DCPConstructor(val construct: (Int, Int) -> DynamicConnectivity) {
     NBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),*/
     //MajorDynamicConnectivity(::MajorDynamicConnectivity),
     //MajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
-    FCDynamicConnectivity(::FCClassicDynamicGraphFlush),
     FCReadOptimizedDynamicConnectivity(::FCDynamicGraphFlush),
+    FCDynamicConnectivity(::FCClassicDynamicGraphFlush),
 }
 
 enum class LockElisionDCPConstructor(val construct: (Int) -> DynamicConnectivity) {

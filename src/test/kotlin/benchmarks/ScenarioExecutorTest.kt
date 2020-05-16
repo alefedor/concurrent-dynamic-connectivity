@@ -32,7 +32,7 @@ class ScenarioExecutorTest {
 
         val graph = Graph(9, edges)
         val scenario = RandomScenarioGenerator()
-            .generate(graph, 3, 6, 1, 1, true)
+            .generate(graph, 3, 6, 1, 1, true, 1)
 
         repeat(1000) {
             val executor = ScenarioExecutor(

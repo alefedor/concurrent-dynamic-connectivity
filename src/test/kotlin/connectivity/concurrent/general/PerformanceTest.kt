@@ -48,9 +48,9 @@ class PerformanceTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
         private val graph = randomDividedGraph(3, 200, 3000)
 
         private val scenarioOneThread = RandomScenarioGenerator()
-            .generate(graph, 1, 100000, 1, 1, true)
+            .generate(graph, 1, 100000, 1, 1, true, 1)
         private val scenarioTwoThreads = RandomScenarioGenerator()
-            .generate(graph, 2, 100000, 1, 1, true)
+            .generate(graph, 2, 100000, 1, 1, true, 1)
 
         @JvmStatic
         @Parameterized.Parameters

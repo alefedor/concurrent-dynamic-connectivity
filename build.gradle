@@ -62,7 +62,7 @@ sourceSets {
 
 task benchmarkJar(type: Jar, dependsOn: jmhJar) {
     manifest {
-        attributes 'Main-Class': 'benchmarks.DynamicConnectivityBenchmarkKt'
+        attributes 'Main-Class': 'benchmarks.BenchmarkRunnerKt'
     }
     classifier = 'benchmark'
     from {

@@ -1,5 +1,6 @@
 package benchmarks.util
 
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -149,7 +150,8 @@ fun parseGrFile(filename: String, gziped: Boolean): Graph {
 fun parseTxtFile(filename: String, gziped: Boolean): Graph {
     val edges = mutableListOf<Long>()
     val inputStream = if (gziped) GZIPInputStream(FileInputStream(filename)) else FileInputStream(filename)
-    var nodes = 0
+    val idMapper = Int2IntOpenHashMap()
+
     InputStreamReader(inputStream).buffered().useLines { it.forEach { line ->
         when {
             line.startsWith("# ") -> {} // just ignore
@@ -157,14 +159,19 @@ fun parseTxtFile(filename: String, gziped: Boolean): Graph {
                 val parts = line.split(" ", "\t")
                 val from = parts[0].toInt()
                 val to   = parts[1].toInt()
-                nodes = max(nodes, from + 1)
-                nodes = max(nodes, to + 1)
-                edges.add(bidirectionalEdge(from, to))
+
+                if (!idMapper.containsKey(from))
+                    idMapper[from] = idMapper.size
+
+                if (!idMapper.containsKey(to))
+                    idMapper[to] = idMapper.size
+
+                edges.add(bidirectionalEdge(idMapper[from], idMapper[to]))
             }
         }
     }
     }
-    return Graph(nodes, edges.toLongArray())
+    return Graph(idMapper.size, edges.toLongArray())
 }
 
 fun <T> addTrivialParameter(f: (Int) -> T): (Int, Int) -> T = { size, threads -> f(size) }

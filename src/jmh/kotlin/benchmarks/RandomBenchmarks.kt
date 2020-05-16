@@ -40,7 +40,7 @@ open class CommonDynamicConnectivityRandomBenchmark {
         val updateWeight = if (readWeight != 9999) 1 else 0
         val readWeight = if (readWeight != 9999) readWeight else 1
         scenario = RandomScenarioGenerator()
-            .generate(graph, workers, totalSize / workers, updateWeight, readWeight, true)
+            .generate(graph, workers, totalSize / workers, updateWeight, readWeight, true, 3)
     }
 
     @Setup(Level.Invocation)
@@ -88,7 +88,7 @@ open class LockElisionDynamicConnectivityRandomBenchmark {
         val updateWeight = if (readWeight != 9999) 1 else 0
         val readWeight = if (readWeight != 9999) readWeight else 1
         scenario = RandomScenarioGenerator()
-            .generate(graph, workers, totalSize / workers, updateWeight, readWeight, true)
+            .generate(graph, workers, totalSize / workers, updateWeight, readWeight, true, 3)
     }
 
     @Setup(Level.Invocation)

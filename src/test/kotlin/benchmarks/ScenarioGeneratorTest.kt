@@ -1,7 +1,7 @@
 package benchmarks
 
 import benchmarks.util.*
-import connectivity.concurrent.general.CoarseGrainedLockingDynamicConnectivity
+import benchmarks.util.generators.*
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import org.junit.Assert.*
 import org.junit.Test
@@ -36,7 +36,8 @@ class ScenarioGeneratorTest {
 
     @Test
     fun randomScenarioGeneratorTest() {
-        val scenario = RandomScenarioGenerator().generate(graph, 3, 6, 1, 1, false)
+        val scenario = RandomScenarioGenerator()
+            .generate(graph, 3, 6, 1, 1, false)
         assertEquals(8, scenario.initialEdges.size)
         assertEquals(3, scenario.queries.size)
         assertEquals(6, scenario.queries[0].size)

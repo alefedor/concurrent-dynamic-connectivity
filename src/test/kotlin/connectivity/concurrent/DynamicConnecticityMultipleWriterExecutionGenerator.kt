@@ -1,6 +1,7 @@
 package connectivity.concurrent
 
 import benchmarks.util.*
+import benchmarks.util.generators.RandomScenarioGenerator
 import org.jetbrains.kotlinx.lincheck.Actor
 import org.jetbrains.kotlinx.lincheck.CTestConfiguration
 import org.jetbrains.kotlinx.lincheck.CTestStructure

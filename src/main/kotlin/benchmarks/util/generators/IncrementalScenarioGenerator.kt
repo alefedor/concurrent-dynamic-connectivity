@@ -1,5 +1,9 @@
-package benchmarks.util
+package benchmarks.util.generators
 
+import benchmarks.util.Graph
+import benchmarks.util.QueryType
+import benchmarks.util.Scenario
+import benchmarks.util.edgeToQuery
 import kotlin.random.Random
 
 class IncrementalScenarioGenerator {

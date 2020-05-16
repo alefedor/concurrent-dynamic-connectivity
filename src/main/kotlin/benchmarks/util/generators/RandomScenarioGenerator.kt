@@ -1,5 +1,6 @@
-package benchmarks.util
+package benchmarks.util.generators
 
+import benchmarks.util.*
 import kotlin.random.Random
 
 val OVERHEAD_RATIO = 6

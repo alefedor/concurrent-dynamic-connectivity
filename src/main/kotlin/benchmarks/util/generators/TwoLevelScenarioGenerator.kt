@@ -1,5 +1,6 @@
-package benchmarks.util
+package benchmarks.util.generators
 
+import benchmarks.util.*
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import kotlin.random.Random
 
@@ -32,13 +33,21 @@ class TwoLevelScenarioGenerator {
         repeat(components) {
             for (u in 0 until nodesPerComponent)
                 for (v in (u + 1) until nodesPerComponent)
-                    initialEdges[pos++] = bidirectionalEdge(nodesPerComponent * it + u, nodesPerComponent * it + v)
+                    initialEdges[pos++] = bidirectionalEdge(
+                        nodesPerComponent * it + u,
+                        nodesPerComponent * it + v
+                    )
         }
         for (edge in scenario.initialEdges)
             initialEdges[pos++] = edge
         check(pos == initialEdges.size)
 
-        return Scenario(nodesPerComponent * components, threads, initialEdges, scenario.queries)
+        return Scenario(
+            nodesPerComponent * components,
+            threads,
+            initialEdges,
+            scenario.queries
+        )
     }
 
     private fun randomInterEdge(components: Int, nodesPerComponent: Int): Long {

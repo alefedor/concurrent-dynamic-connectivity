@@ -1,5 +1,6 @@
-package benchmarks.util
+package benchmarks.util.executors
 
+import benchmarks.util.*
 import connectivity.sequential.general.DynamicConnectivity
 import kotlinx.atomicfu.AtomicInt
 import kotlinx.atomicfu.atomic

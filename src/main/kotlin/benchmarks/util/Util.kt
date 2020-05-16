@@ -89,8 +89,27 @@ fun downloadOrCreateAndParseGraph(name: String, type: String, url: String): Grap
     val rnd = Random(454)
     return Graph(
         graph.nodes,
-        graph.edges.toMutableList().shuffled(rnd).toLongArray()
+        removeSameEdges(graph.edges).toMutableList().shuffled(rnd).toLongArray()
     )
+}
+
+fun removeSameEdges(edges: LongArray): LongArray {
+    val set = LongOpenHashSet()
+    for (edge in edges)
+        set.add(bidirectionalEdge(min(edge.from(), edge.to()), max(edge.from(), edge.to())))
+    val result = LongArray(set.size)
+    var pos = 0
+    val iterator = set.iterator()
+    val rnd = Random(435)
+    while (iterator.hasNext()) {
+        val edge = iterator.nextLong()
+        if (rnd.nextBoolean())
+            result[pos++] = bidirectionalEdge(edge.from(), edge.to())
+        else
+            result[pos++] = bidirectionalEdge(edge.to(), edge.from())
+    }
+    check(pos == result.size)
+    return result
 }
 
 fun writeGrFile(filename: String, graph: Graph) {

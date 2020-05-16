@@ -1,8 +1,6 @@
 package benchmarks
 
-import benchmarks.util.DCPConstructor
-import benchmarks.util.LockElisionDCPConstructor
-import benchmarks.util.Scenario
+import benchmarks.util.*
 import benchmarks.util.executors.ScenarioExecutor
 import benchmarks.util.generators.RandomScenarioGenerator
 import benchmarks.util.generators.TwoLevelScenarioGenerator
@@ -22,7 +20,7 @@ open class CommonDynamicConnectivityTwoLevelBenchmark {
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: DCPConstructor = DCPConstructor.values()[0]
+    open var dcpConstructor: DCPForModificationsConstructor = DCPForModificationsConstructor.values()[0]
 
     @Param("1", "2", "4", "8", "16", "32", "64", "128")
     open var workers: Int = 0
@@ -61,7 +59,7 @@ open class LockElisionDynamicConnectivityTwoLevelBenchmark {
     lateinit var scenarioExecutor: ScenarioExecutor
 
     @Param
-    open var dcpConstructor: LockElisionDCPConstructor = LockElisionDCPConstructor.values()[0]
+    open var dcpConstructor: LockElisionDCPForModificationsConstructor = LockElisionDCPForModificationsConstructor.values()[0]
 
     @Param("1", "2", "4", "8", "16", "32", "64", "128")
     open var workers: Int = 0

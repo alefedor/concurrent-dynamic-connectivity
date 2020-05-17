@@ -160,13 +160,15 @@ fun parseTxtFile(filename: String, gziped: Boolean): Graph {
                 val from = parts[0].toInt()
                 val to   = parts[1].toInt()
 
-                if (!idMapper.containsKey(from))
-                    idMapper[from] = idMapper.size
+                if (from != to) {
+                    if (!idMapper.containsKey(from))
+                        idMapper[from] = idMapper.size
 
-                if (!idMapper.containsKey(to))
-                    idMapper[to] = idMapper.size
+                    if (!idMapper.containsKey(to))
+                        idMapper[to] = idMapper.size
 
-                edges.add(bidirectionalEdge(idMapper[from], idMapper[to]))
+                    edges.add(bidirectionalEdge(idMapper[from], idMapper[to]))
+                }
             }
         }
     }

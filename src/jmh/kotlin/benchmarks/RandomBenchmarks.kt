@@ -37,10 +37,11 @@ open class CommonDynamicConnectivityRandomBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
+        val totalScenarioSize = getTotalScenarioSize(graphParams, readWeight)
         val updateWeight = if (readWeight != 9999) 1 else 0
         val readWeight = if (readWeight != 9999) readWeight else 1
         scenario = RandomScenarioGenerator()
-            .generate(graph, workers, totalSize / workers, updateWeight, readWeight, true, 3)
+            .generate(graph, workers, totalScenarioSize / workers, updateWeight, readWeight, true, 3)
     }
 
     @Setup(Level.Invocation)
@@ -85,10 +86,11 @@ open class LockElisionDynamicConnectivityRandomBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         val graph = GraphServer.getLookup().graphByParams(graphParams)
+        val totalScenarioSize = getTotalScenarioSize(graphParams, readWeight)
         val updateWeight = if (readWeight != 9999) 1 else 0
         val readWeight = if (readWeight != 9999) readWeight else 1
         scenario = RandomScenarioGenerator()
-            .generate(graph, workers, totalSize / workers, updateWeight, readWeight, true, 3)
+            .generate(graph, workers, totalScenarioSize / workers, updateWeight, readWeight, true, 3)
     }
 
     @Setup(Level.Invocation)
@@ -100,4 +102,28 @@ open class LockElisionDynamicConnectivityRandomBenchmark {
     fun flushOut() {
         println()
     }
+}
+
+fun getTotalScenarioSize(graphParams: GraphParams, readWeight: Int): Int {
+    var result = when(graphParams) {
+        GraphParams.USA_ROADS -> 1000000
+        GraphParams.RANDOM_N -> 1000000
+        GraphParams.RANDOM_2N -> 1000000
+        GraphParams.RANDOM_NLOG -> 4000000
+        GraphParams.RANDOM_NSQRT -> 4000000
+        GraphParams.TWITTER -> 4000000
+        GraphParams.STANFORD_WEB -> 1000000
+        GraphParams.RANDOM_DIVIDED -> 4000000
+    }
+
+    if (readWeight == 4)
+        result *= 2
+
+    if (readWeight == 19)
+        result *= 4
+
+    if (readWeight == 9999)
+        result *= 10
+
+    return result
 }

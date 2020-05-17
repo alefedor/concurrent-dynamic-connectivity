@@ -24,8 +24,8 @@ enum class DCPConstructor(val construct: (Int, Int) -> DynamicConnectivity) {
 enum class LockElisionDCPConstructor(val construct: (Int) -> DynamicConnectivity) {
     LockElisionCoarseGrainedLockingDCP(::CoarseGrainedLockingDynamicConnectivity),
     LockElisionNBReadsCoarseGrainedLockingDCP(::NBReadsCoarseGrainedLockingDynamicConnectivity),
-    LockElisionFineGrainedLockingDCP(::FineGrainedLockingDynamicConnectivity),
-    LockElisionNBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),
+    //LockElisionFineGrainedLockingDCP(::FineGrainedLockingDynamicConnectivity),
+    //LockElisionNBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),
     LockElisionMajorDynamicConnectivity(::MajorDynamicConnectivity),
     LockElisionMajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
 }
@@ -40,7 +40,7 @@ enum class DCPForModificationsConstructor(val construct: (Int, Int) -> DynamicCo
 
 enum class LockElisionDCPForModificationsConstructor(val construct: (Int) -> DynamicConnectivity) {
     LockElisionCoarseGrainedLockingDCP(::CoarseGrainedLockingDynamicConnectivity),
-    LockElisionFineGrainedLockingDCP(::FineGrainedLockingDynamicConnectivity),
+    //LockElisionFineGrainedLockingDCP(::FineGrainedLockingDynamicConnectivity),
     LockElisionMajorDynamicConnectivity(::MajorDynamicConnectivity),
     LockElisionMajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
 }

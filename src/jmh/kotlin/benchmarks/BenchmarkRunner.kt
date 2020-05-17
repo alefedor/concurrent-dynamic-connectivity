@@ -12,9 +12,8 @@ import org.openjdk.jmh.runner.RunnerException
 import org.openjdk.jmh.runner.options.OptionsBuilder
 import java.util.concurrent.TimeUnit
 
-const val iterations = 10
-const val warmupIterations = 3
-const val totalSize = 4000000
+const val iterations = 6
+const val warmupIterations = 2
 
 @Throws(RunnerException::class)
 fun main() {

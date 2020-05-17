@@ -59,14 +59,18 @@ class ScenarioGeneratorTest {
     fun incrementalScenarioGeneratorTest() {
         val scenario = IncrementalScenarioGenerator().generate(graph, 4)
         val edges = runScenario(scenario)
-        assertEquals(16, edges.size)
+        assertEquals(17, scenario.queries[0].size)
+        assertEquals(0, scenario.queries[1].size)
+        assertEquals(17, edges.size)
     }
 
     @Test
     fun decrementalScenarioGeneratorTest() {
         val scenario = DecrementalScenarioGenerator().generate(graph, 4)
         val edges = runScenario(scenario)
-        assertEquals(1, edges.size)
+        assertEquals(17, scenario.queries[0].size)
+        assertEquals(0, scenario.queries[1].size)
+        assertEquals(0, edges.size)
     }
 
     @Test

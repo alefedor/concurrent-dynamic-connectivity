@@ -22,7 +22,7 @@ class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -
         for (edge in scenario.initialEdges)
             dcp.addEdge(edge.from(), edge.to())
 
-        val threadsInitialized = AtomicInteger(1)
+        val threadsInitialized = AtomicInteger(0)
 
         threads = Array(scenario.threads) { threadId ->
             Thread {

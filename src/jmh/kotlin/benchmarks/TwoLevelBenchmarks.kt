@@ -33,7 +33,7 @@ open class CommonDynamicConnectivityTwoLevelBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         scenario = TwoLevelScenarioGenerator()
-            .generate(components, nodesPerComponent, workers, totalSize / workers)
+            .generate(components, nodesPerComponent, workers, 2000000 / workers)
     }
 
     @Setup(Level.Invocation)
@@ -73,7 +73,7 @@ open class LockElisionDynamicConnectivityTwoLevelBenchmark {
     @Setup(Level.Trial)
     fun initialize() {
         scenario = TwoLevelScenarioGenerator()
-            .generate(components, nodesPerComponent, workers, totalSize / workers)
+            .generate(components, nodesPerComponent, workers, 2000000 / workers)
     }
 
     @Setup(Level.Invocation)

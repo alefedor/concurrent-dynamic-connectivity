@@ -7,12 +7,14 @@ import benchmarks.util.edgeToQuery
 import kotlin.random.Random
 
 class IncrementalScenarioGenerator {
-    private val rnd = Random(647)
     fun generate(graph: Graph, threads: Int): Scenario {
-        val edgesPerThread = graph.edges.size / threads
-        val queries = Array(threads) { thread ->
-            LongArray(edgesPerThread) {
-                graph.edges[thread * edgesPerThread + it].edgeToQuery(QueryType.ADD_EDGE)
+        val queries = Array(threads) {
+            if (it == 0) {
+                LongArray(graph.edges.size) {
+                    graph.edges[it].edgeToQuery(QueryType.ADD_EDGE)
+                }
+            } else {
+                LongArray(0)
             }
         }
         return Scenario(graph.nodes, threads, LongArray(0), queries)

@@ -13,7 +13,7 @@ enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size:
     NBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
     MajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
-    FCDynamicConnectivity( { size -> thirdparty.Aksenov239.fc.FCDynamicGraphFlush(size, 3) })
+    FCDynamicConnectivity( { size -> thirdparty.Aksenov239.fc.FCDynamicGraph(size, 3) })
 }
 
 var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.values()[0]

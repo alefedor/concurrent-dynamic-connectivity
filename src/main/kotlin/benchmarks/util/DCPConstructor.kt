@@ -10,15 +10,15 @@ import thirdparty.Aksenov239.fc.FCDynamicGraph
 import thirdparty.Aksenov239.fc.FCDynamicGraphFlush
 
 enum class DCPConstructor(val construct: (Int, Int) -> DynamicConnectivity) {
-    CoarseGrainedLockingDCP(addTrivialParameter(::CoarseGrainedLockingDynamicConnectivity)),
-    CoarseGrainedReadWriteLockingDCP(addTrivialParameter(::CoarseGrainedReadWriteLockingDynamicConnectivity)),
     NBReadsCoarseGrainedLockingDCP(addTrivialParameter(::NBReadsCoarseGrainedLockingDynamicConnectivity)),
-    FineGrainedLockingDCP(addTrivialParameter(::FineGrainedLockingDynamicConnectivity)),
-    FineGrainedReadWriteLockingDynamicConnectivity(addTrivialParameter(::FineGrainedReadWriteLockingDynamicConnectivity)),
     NBReadsFineGrainedLockingDynamicConnectivity(addTrivialParameter(::NBReadsFineGrainedLockingDynamicConnectivity)),
     MajorDynamicConnectivity(addTrivialParameter(::MajorDynamicConnectivity)),
     MajorCoarseGrainedDynamicConnectivity(addTrivialParameter(::MajorCoarseGrainedDynamicConnectivity)),
     FCReadOptimizedDynamicConnectivity(::FCDynamicGraph),
+    CoarseGrainedLockingDCP(addTrivialParameter(::CoarseGrainedLockingDynamicConnectivity)),
+    CoarseGrainedReadWriteLockingDCP(addTrivialParameter(::CoarseGrainedReadWriteLockingDynamicConnectivity)),
+    FineGrainedLockingDCP(addTrivialParameter(::FineGrainedLockingDynamicConnectivity)),
+    FineGrainedReadWriteLockingDynamicConnectivity(addTrivialParameter(::FineGrainedReadWriteLockingDynamicConnectivity)),
 }
 
 enum class LockElisionDCPConstructor(val construct: (Int) -> DynamicConnectivity) {

@@ -1,5 +1,6 @@
 package connectivity.concurrent.general.major
 
+import com.google.common.collect.ConcurrentHashMultiset
 import connectivity.ConcurrentEdgeMap
 import connectivity.Edge
 import connectivity.NO_EDGE
@@ -13,7 +14,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE
     var left: Node? = null
     var right: Node? = null
     var size: Int = 1
-    val nonTreeEdges: MajorQueue? = if (isVertex) MajorQueue() else null // for storing non-tree edges in general case
+    val nonTreeEdges: ConcurrentHashMultiset<Edge>? = if (isVertex) ConcurrentHashMultiset.create<Edge>() else null // for storing non-tree edges in general case
     @Volatile
     var hasNonTreeEdges: Boolean = false // for traversal
     var currentLevelTreeEdge: Edge = treeEdge

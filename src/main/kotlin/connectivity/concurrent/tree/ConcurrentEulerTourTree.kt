@@ -134,7 +134,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             if (!rereadRoot(u, uRoot, uRootVersion)) continue
             if (uRoot !== vRoot) {
                 if (!rereadRoot(v, vRoot, vRootVersion)) continue
-                if (!rereadRoot(u, uRoot, uRootVersion)) continue
+                if (!checkRoot(uRoot, uRootVersion)) continue
             }
             return uRoot === vRoot
         }
@@ -151,6 +151,9 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val root = root(v)
         return wasRoot === root && wasVersion == root.version
     }
+
+    private inline fun checkRoot(root: ConcurrentETTNode, shouldHaveVersion: Int) =
+        root.parent == null && root.version == shouldHaveVersion
 
     fun root(v : Int): ConcurrentETTNode = root(nodes[v])
 

@@ -4,6 +4,7 @@ import com.google.common.collect.ConcurrentHashMultiset
 import connectivity.ConcurrentEdgeMap
 import connectivity.Edge
 import connectivity.NO_EDGE
+import connectivity.concurrent.tree.ConcurrentETTNode
 import connectivity.makeDirectedEdge
 import connectivity.sequential.tree.*
 import java.util.concurrent.*
@@ -142,11 +143,15 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             if (!rereadRoot(u, uRoot, uRootVersion)) continue
             if (uRoot !== vRoot) {
                 if (!rereadRoot(v, vRoot, vRootVersion)) continue
-                if (!rereadRoot(u, uRoot, uRootVersion)) continue
+                if (!checkRoot(uRoot, uRootVersion)) continue
             }
             return uRoot === vRoot
         }
     }
+
+    private inline fun checkRoot(root: Node, shouldHaveVersion: Int) =
+        root.parent == null && root.version == shouldHaveVersion
+
 
     internal fun connectedSimple(u: Int, v: Int, additionalRoot: Node? = null): Boolean {
         val uRoot = root(u, additionalRoot)

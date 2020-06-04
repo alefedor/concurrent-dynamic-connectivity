@@ -1,10 +1,9 @@
 package thirdparty.Aksenov239.fc;
 
+import benchmarks.util.BenchmarkThread;
 import connectivity.sequential.general.DynamicConnectivity;
 import connectivity.sequential.general.SequentialDynamicConnectivity;
 import thirdparty.Aksenov239.BlackHole;
-
-import java.util.Random;
 
 /**
  * User: Aksenov Vitaly
@@ -12,8 +11,6 @@ import java.util.Random;
  * Time: 15:56
  */
 public class FCDynamicGraph implements DynamicConnectivity {
-    Random rnd = new Random(239);
-
     SequentialDynamicConnectivity sdg;
 
     int N;
@@ -28,7 +25,11 @@ public class FCDynamicGraph implements DynamicConnectivity {
         sdg = new SequentialDynamicConnectivity(n);
 
         readRequests = new Request[T];
-        reinitialize();
+        allocatedRequests = new Request[threads];
+        for (int i = 0; i < threads; i++)
+            allocatedRequests[i] = new Request();
+        fc = new FCArray(T);
+        allocatedRequest = new ThreadLocal<>();
     }
 
     public void isConnected(Request request) {
@@ -46,21 +47,24 @@ public class FCDynamicGraph implements DynamicConnectivity {
 
     public FCArray fc;
     final private Request[] readRequests;
+    final private Request[] allocatedRequests;
 
-    public void reinitialize() {
-        fc = new FCArray(T);
-        allocatedRequests = new ThreadLocal<>();
-    }
-
-    private ThreadLocal<Request> allocatedRequests = new ThreadLocal<Request>();
+    private ThreadLocal<Request> allocatedRequest;
 
     private Request getLocalRequest() {
-        Request request = allocatedRequests.get();
-        if (request == null) {
-            request = new Request();
-            allocatedRequests.set(request);
+        Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof BenchmarkThread) {
+            int threadId = ((BenchmarkThread) currentThread).getThreadId();
+            return allocatedRequests[threadId];
+        } else {
+            // for testing only
+            Request request = allocatedRequest.get();
+            if (request == null) {
+                request = new Request();
+                allocatedRequest.set(request);
+            }
+            return request;
         }
-        return request;
     }
 
     private static final int PUSHED = 0;
@@ -71,7 +75,7 @@ public class FCDynamicGraph implements DynamicConnectivity {
     private static final int ADD = 1;
     private static final int REMOVE = 2;
 
-    public class Request extends FCArray.FCRequest {
+    public static class Request extends FCArray.FCRequest {
         volatile int type;
         volatile int u;
         volatile int v;
@@ -219,13 +223,11 @@ public class FCDynamicGraph implements DynamicConnectivity {
         Request request = getLocalRequest();
         request.set(ADD, u, v);
         handleRequest(request);
-        return;
     }
 
     public void removeEdge(int u, int v) {
         Request request = getLocalRequest();
         request.set(REMOVE, u, v);
         handleRequest(request);
-        return;
     }
 }

@@ -4,6 +4,7 @@ import benchmarks.util.*
 import benchmarks.util.generators.OVERHEAD_RATIO
 import connectivity.sequential.general.DynamicConnectivity
 import kotlinx.atomicfu.atomic
+import thirdparty.Aksenov239.fc.FCDynamicGraph
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -21,15 +22,24 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
     private var start = false
 
     init {
-        for (edge in scenario.initialEdges)
-            dcp.addEdge(edge.from(), edge.to())
+        if (dcp is FCDynamicGraph) {
+            val request = FCDynamicGraph.Request()
+            for (edge in scenario.initialEdges) {
+                request.set(0, edge.from(), edge.to())
+                dcp.addEdge(request)
+            }
+        } else {
+            for (edge in scenario.initialEdges) {
+                dcp.addEdge(edge.from(), edge.to())
+            }
+        }
 
         val expectedOverhead = scenario.threads * BATCH_SIZE / 2
         val operationsNeeded = scenario.threads * scenario.queries[0].size / OVERHEAD_RATIO - expectedOverhead
         val threadsInitialized = AtomicInteger(0)
 
         threads = Array(scenario.threads) { threadId ->
-            Thread {
+            BenchmarkThread(threadId) {
                 val queries = scenario.queries[threadId]
 
                 threadsInitialized.incrementAndGet()

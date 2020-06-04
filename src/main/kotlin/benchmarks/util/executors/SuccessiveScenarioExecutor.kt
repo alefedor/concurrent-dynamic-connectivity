@@ -4,6 +4,7 @@ import benchmarks.util.*
 import connectivity.sequential.general.DynamicConnectivity
 import kotlinx.atomicfu.AtomicInt
 import kotlinx.atomicfu.atomic
+import thirdparty.Aksenov239.fc.FCDynamicGraph
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -19,13 +20,22 @@ class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -
     private var start = false
 
     init {
-        for (edge in scenario.initialEdges)
-            dcp.addEdge(edge.from(), edge.to())
+        if (dcp is FCDynamicGraph) {
+            val request = FCDynamicGraph.Request()
+            for (edge in scenario.initialEdges) {
+                request.set(0, edge.from(), edge.to())
+                dcp.addEdge(request)
+            }
+        } else {
+            for (edge in scenario.initialEdges) {
+                dcp.addEdge(edge.from(), edge.to())
+            }
+        }
 
         val threadsInitialized = AtomicInteger(0)
 
         threads = Array(scenario.threads) { threadId ->
-            Thread {
+            BenchmarkThread(threadId) {
                 val queries = scenario.queries[0]
 
                 threadsInitialized.incrementAndGet()

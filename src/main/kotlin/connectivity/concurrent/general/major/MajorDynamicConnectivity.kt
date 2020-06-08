@@ -2,7 +2,6 @@ package connectivity.concurrent.general.major
 
 import connectivity.*
 import connectivity.sequential.general.DynamicConnectivity
-import java.util.concurrent.atomic.AtomicReference
 
 class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<MajorConcurrentEulerTourTree>
@@ -25,24 +24,14 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         statuses[edge] = EdgeStatus.INITIAL
         var currentStatus = EdgeStatus.INITIAL
         while (true) {
-            if (currentStatus != EdgeStatus.INITIAL && currentStatus != EdgeStatus.SPECIAL)
+            if (currentStatus != EdgeStatus.INITIAL)
                 return // someone already finished the edge addition
             if (!connected(u, v)) {
-                // change status to SPECIAL before locking
-                if (currentStatus != EdgeStatus.SPECIAL) {
-                    if (!statuses.replace(edge, EdgeStatus.INITIAL, EdgeStatus.SPECIAL)) {
-                        if (statuses[edge] != EdgeStatus.SPECIAL)
-                            return // someone already finished the edge addition
-                    }
-                }
                 withLockedComponents(u, v) {
-                    doAddEdge(u, v)
-                    return
+                    if (doAddEdge(u, v))
+                        return
                 }
             } else {
-                // change status to INITIAL before non-blocking addition
-                if (currentStatus == EdgeStatus.SPECIAL)
-                    statuses[edge] = EdgeStatus.INITIAL
                 if (tryNonBlockingAddEdge(u, v))
                     return
             }
@@ -50,22 +39,15 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         }
     }
 
-    fun doAddEdge(u: Int, v: Int) { // under lock
+    fun doAddEdge(u: Int, v: Int): Boolean { // under lock
         val edge = makeEdge(u, v)
         if (!levels[0].connectedSimple(u, v)) {
             levels[0].addEdge(u, v)
             // just set, because status is SPECIAL
-            statuses[edge] = EdgeStatus.TREE_EDGE
-        } else {
-            levels[0].node(u).updateNonTreeEdges {
-                nonTreeEdges!!.add(edge)
-            }
-            levels[0].node(v).updateNonTreeEdges {
-                nonTreeEdges!!.add(edge)
-            }
-            // just set, because status is SPECIAL
-            statuses[edge] = EdgeStatus.NON_TREE_EDGE
+            statuses.replace(edge, EdgeStatus.INITIAL, EdgeStatus.TREE_EDGE)
+            return true
         }
+        return false
     }
 
     fun tryNonBlockingAddEdge(u: Int, v: Int): Boolean {
@@ -85,17 +67,17 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             // is not finished before the end of this code
             if (level.connectedSimple(u, v) && !level.connectedSimple(u, v, removeEdgeOperation.additionalRoot)) {
                 // can be a replacement
-                if (statuses.replace(edge, EdgeStatus.INITIAL, EdgeStatus.SPECIAL)) {
+                if (statuses.replace(edge, EdgeStatus.INITIAL, EdgeStatus.REPLACEMENT)) {
                     // self fail, so that no one could add the edge
                     if (removeEdgeOperation.replacement.compareAndSet(NO_EDGE, edge))
                         return true
 
-                    level.node(u).updateNonTreeEdges {
+                    /*level.node(u).updateNonTreeEdges {
                         nonTreeEdges!!.remove(edge)
                     }
                     level.node(v).updateNonTreeEdges {
                         nonTreeEdges!!.remove(edge)
-                    }
+                    }*/
                     return false
                 }
             }
@@ -104,12 +86,12 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         if (connected(u, v) && statuses.replace(edge, EdgeStatus.INITIAL, EdgeStatus.NON_TREE_EDGE))
             return true
 
-        level.node(u).updateNonTreeEdges {
+        /*level.node(u).updateNonTreeEdges {
             nonTreeEdges!!.remove(edge)
         }
         level.node(v).updateNonTreeEdges {
             nonTreeEdges!!.remove(edge)
-        }
+        }*/
         return false
     }
 
@@ -123,7 +105,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     return
                 }
             } else {
-                if (currentStatus == EdgeStatus.SPECIAL) continue // active wait until the edge becomes TREE_EDGE
+                if (currentStatus == EdgeStatus.REPLACEMENT) continue // active wait until the edge becomes TREE_EDGE
                 require(currentStatus == EdgeStatus.NON_TREE_EDGE) // can remove edge
                 if (statuses.replace(edge, EdgeStatus.NON_TREE_EDGE, EdgeStatus.REMOVED)) {
                     levels[ranks[edge]].node(u).updateNonTreeEdges {
@@ -264,7 +246,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             val iterator = it.iterator()
             while (iterator.hasNext()) {
                 val edge = iterator.next()
-                iterator.remove()
+                //iterator.remove()
                 if (edge == NO_EDGE) break
                 val edgeRank = ranks[edge] ?: continue // skip already deleted edges
                 if (edgeRank != rank) continue // check that rank is correct, because we do not delete twin edges
@@ -318,7 +300,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             val iterator = it.iterator()
             mainLoop@while (iterator.hasNext()) {
                 val edge = iterator.next()
-                iterator.remove()
+                //iterator.remove()
                 if (edge == NO_EDGE) break
                 val edgeRank = ranks[edge] ?: continue // skip already deleted edges
                 if (edgeRank != 0) continue // check that rank is correct, because we do not delete twin edges
@@ -339,7 +321,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                             statuses.replace(edge, EdgeStatus.INITIAL, EdgeStatus.NON_TREE_EDGE)
                             // one way or another the edge will be added by this point
                         } else {
-                            if (statuses.replace(edge, EdgeStatus.INITIAL, EdgeStatus.SPECIAL)) {
+                            if (statuses.replace(edge, EdgeStatus.INITIAL, EdgeStatus.REPLACEMENT)) {
                                 // just skip
                                 continue@mainLoop
                             } else {
@@ -349,7 +331,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     }
                     EdgeStatus.TREE_EDGE -> continue@mainLoop // skip too
                     EdgeStatus.REMOVED -> continue@mainLoop // just remove
-                    EdgeStatus.SPECIAL -> continue@mainLoop
+                    EdgeStatus.REPLACEMENT -> continue@mainLoop
                 }
 
                 // is a non tree edge here, or maybe deleted

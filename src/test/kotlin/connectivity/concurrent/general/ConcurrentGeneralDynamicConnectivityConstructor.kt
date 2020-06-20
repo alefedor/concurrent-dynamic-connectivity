@@ -5,7 +5,7 @@ import connectivity.concurrent.general.major_coarse_grained.MajorCoarseGrainedDy
 import connectivity.sequential.general.DynamicConnectivity
 
 enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
-    /*CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
+    CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),/*
     CoarseGrainedReadWriteLockingDynamicConnectivity(::CoarseGrainedReadWriteLockingDynamicConnectivity),
     FineGrainedLockingDynamicConnectivity(::FineGrainedLockingDynamicConnectivity),
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),

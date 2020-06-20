@@ -1,6 +1,7 @@
 package connectivity.concurrent.general
 
 import connectivity.concurrent.GeneralDynamicConnectivityMultipleWriterExecutionGenerator
+import connectivity.concurrent.general.major.log
 import connectivity.sequential.SlowConnectivity
 import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
@@ -17,13 +18,13 @@ private const val n2 = 7
 private const val n3 = 9
 
 private const val actorsPerThread = 7
-private const val iterations = 3000
+private const val iterations = 2000
 private const val invocations = 4000
 
 @RunWith(Parameterized::class)
-class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
+class ConcurrentDynamicConnectivityMultipleWriterTest(constructorId: Int) {
     init {
-        globalDcpConstructor = dcp
+        globalDcpConstructor = ConcurrentGeneralDynamicConnectivityConstructor.values()[constructorId]
     }
 
     class DynamicConnectivitySequentialSpecification() {
@@ -42,11 +43,16 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false
+        //sequentialSpecification = DynamicConnectivitySequentialSpecification::class
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n1 - 1}")
     @OpGroupConfig(name = "writer", nonParallel = true)
     class LinCheckDynamicConnectivityConcurrentStressTest1 {
         private val dc = globalDcpConstructor.construct(n1)
+
+        init {
+            log.clear()
+        }
 
         @Operation
         fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
@@ -122,12 +128,17 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(dcp: ConcurrentGeneralDyna
     companion object {
         @JvmStatic
         @Parameterized.Parameters
-        fun dcpConstructors() = ConcurrentGeneralDynamicConnectivityConstructor.values()
+        fun dcpConstructorIds() = Array(ConcurrentGeneralDynamicConnectivityConstructor.values().size) { it }
     }
 
     @Test
     fun test1() {
-        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest1::class.java)
+        try {
+            LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest1::class.java)
+        } catch(e: Throwable) {
+            println(log.toString())
+            throw e
+        }
     }
 
     @Test

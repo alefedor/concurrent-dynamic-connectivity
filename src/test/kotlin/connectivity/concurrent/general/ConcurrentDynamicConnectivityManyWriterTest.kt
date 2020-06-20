@@ -17,13 +17,14 @@ private const val n2 = 7
 
 private const val actorsPerThread = 4
 private const val iterations = 200
+private const val invocations = 4000
 private const val threads = 3
 
 @RunWith(Parameterized::class)
-class ConcurrentDynamicConnectivityManyWriterTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
+class ConcurrentDynamicConnectivityManyWriterTest(constructorId: Int) {
 
     init {
-        globalDcpConstructor = dcp
+        globalDcpConstructor = ConcurrentGeneralDynamicConnectivityConstructor.values()[constructorId]
     }
 
     class DynamicConnectivitySequentialSpecification() {
@@ -38,6 +39,7 @@ class ConcurrentDynamicConnectivityManyWriterTest(dcp: ConcurrentGeneralDynamicC
         actorsBefore = n1,
         actorsPerThread = actorsPerThread,
         iterations = iterations,
+        invocationsPerIteration = invocations,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false,
@@ -68,6 +70,7 @@ class ConcurrentDynamicConnectivityManyWriterTest(dcp: ConcurrentGeneralDynamicC
         actorsBefore = n2,
         actorsPerThread = actorsPerThread,
         iterations = iterations,
+        invocationsPerIteration = invocations,
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false,
@@ -94,7 +97,7 @@ class ConcurrentDynamicConnectivityManyWriterTest(dcp: ConcurrentGeneralDynamicC
     companion object {
         @JvmStatic
         @Parameterized.Parameters
-        fun dcpConstructors() = ConcurrentGeneralDynamicConnectivityConstructor.values()
+        fun dcpConstructorIds() = Array(ConcurrentGeneralDynamicConnectivityConstructor.values().size) { it }
     }
 
     @Test

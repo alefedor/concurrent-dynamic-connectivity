@@ -19,10 +19,10 @@ private const val iterations = 1000
 private const val invocations = 4000
 
 @RunWith(Parameterized::class)
-class ConcurrentDynamicConnectivitySingleWriterTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
+class ConcurrentDynamicConnectivitySingleWriterTest(constructorId: Int) {
 
     init {
-        globalDcpConstructor = dcp
+        globalDcpConstructor = ConcurrentGeneralDynamicConnectivityConstructor.values()[constructorId]
     }
 
     @StressCTest(
@@ -116,7 +116,7 @@ class ConcurrentDynamicConnectivitySingleWriterTest(dcp: ConcurrentGeneralDynami
     companion object {
         @JvmStatic
         @Parameterized.Parameters
-        fun dcpConstructors() = ConcurrentGeneralDynamicConnectivityConstructor.values()
+        fun dcpConstructorIds() = Array(ConcurrentGeneralDynamicConnectivityConstructor.values().size) { it }
     }
 
     @Test

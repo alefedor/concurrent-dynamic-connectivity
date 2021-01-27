@@ -3,13 +3,17 @@ package connectivity.concurrent.general.major
 import connectivity.*
 import connectivity.concurrent.general.major_coarse_grained.EdgeStatus
 import connectivity.sequential.general.DynamicConnectivity
+import java.io.File
+import java.lang.IllegalStateException
 import java.lang.StringBuilder
 
 val log = StringBuilder()
+//val file = File("/home/alexander/log.txt")
+//val printWriter = file.printWriter()
 
 inline fun appendInLog(m: String) {
     /*synchronized(log) {
-        log.appendln(m)
+        printWriter.appendln(m)
     }*/
 }
 
@@ -33,17 +37,17 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         var currentStatus = INITIAL
         while (true) {
             if (currentStatus != INITIAL) {
-                appendInLog("current status is $currentStatus! $u $v")
+                //appendInLog("current status is $currentStatus! $u $v")
                 return // someone already finished the edge addition
             }
             if (!connected(u, v)) {
-                appendInLog("addition spanning $u $v")
+                //appendInLog("addition spanning $u $v")
                 withLockedComponents(u, v) {
                     if (doAddEdge(u, v))
                         return
                 }
             } else {
-                appendInLog("addition non-spanning $u $v")
+                //appendInLog("addition non-spanning $u $v")
                 if (tryNonBlockingAddEdge(u, v))
                     return
             }
@@ -195,6 +199,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 if (replacementEdge != NO_EDGE) {
                     appendInLog("found a replacement ${replacementEdge.u()} ${replacementEdge.v()}")
                     states[replacementEdge] = makeState(SPANNING, r)
+                    // as the edge was NON_SPANNING before, its info should be removed
+                    levels[r].node(u).updateNonTreeEdges {
+                        nonTreeEdges!!.remove(replacementEdge)
+                    }
+                    levels[r].node(v).updateNonTreeEdges {
+                        nonTreeEdges!!.remove(replacementEdge)
+                    }
                     for (i in r downTo 0) {
                         val lr = if (i == r) {
                             lowerRoot
@@ -223,6 +234,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 if (replacementEdge != NO_EDGE) {
                     appendInLog("found a replacement ${replacementEdge.u()} ${replacementEdge.v()}")
                     states[replacementEdge] = makeState(SPANNING, r)
+                    // as the edge was NON_SPANNING before, its info should be removed
+                    levels[r].node(u).updateNonTreeEdges {
+                        nonTreeEdges!!.remove(replacementEdge)
+                    }
+                    levels[r].node(v).updateNonTreeEdges {
+                        nonTreeEdges!!.remove(replacementEdge)
+                    }
                     for (i in r downTo 0) {
                         val lr = if (i == r) {
                             lowerRoot
@@ -285,6 +303,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 val edgeState = states[edge] ?: continue // skip already deleted edges
                 if (edgeState.rank() != rank) continue // check that rank is correct
                 val status = edgeState.status()
+                if (status == SPANNING) throw IllegalStateException("A spanning edge was not fully deleted from non-spanning sets")
                 if (status != NON_SPANNING) continue // skip any non-spanning edges
                 if (!levels[rank].connectedSimple(edge.u(), edge.v(), additionalRoot)) {
                     // is a replacement
@@ -295,6 +314,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     }
                     break
                 } else {
+                    appendInLog("edge promotion ${edge.u()} ${edge.v()}")
                     // promote non-tree edge
                     levels[rank + 1].node(edge.u()).updateNonTreeEdges {
                         this.nonTreeEdges!!.add(edge)
@@ -312,7 +332,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                             this.nonTreeEdges!!.remove(edge)
                         }
                     } else {
-                        appendInLog("edge promotion ${edge.u()} ${edge.v()}")
                         // promotion failed
                         // cancel the additions
                         levels[rank + 1].node(edge.u()).updateNonTreeEdges {
@@ -391,7 +410,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                             continue@mainLoop
                         }
                     }
-                    SPANNING -> continue@mainLoop
+                    SPANNING -> throw IllegalStateException("A spanning edge was not fully deleted from non-spanning sets")
                     REMOVED -> continue@mainLoop
                     REPLACEMENT -> continue@mainLoop
                 }

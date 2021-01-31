@@ -18,7 +18,7 @@ private const val n2 = 7
 private const val n3 = 9
 
 private const val actorsPerThread = 7
-private const val iterations = 2000
+private const val iterations = 4000
 private const val invocations = 4000
 
 @RunWith(Parameterized::class)
@@ -78,10 +78,15 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(constructorId: Int) {
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false
+        //sequentialSpecification = DynamicConnectivitySequentialSpecification::class
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n2 - 1}")
     class LinCheckDynamicConnectivityConcurrentStressTest2 {
         private val dc = globalDcpConstructor.construct(n2)
+
+        init {
+            log.clear()
+        }
 
         @Operation
         fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
@@ -106,10 +111,15 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(constructorId: Int) {
         generator = GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class,
         minimizeFailedScenario = false,
         requireStateEquivalenceImplCheck = false
+        //sequentialSpecification = DynamicConnectivitySequentialSpecification::class
     )
     @Param(name = "a", gen = IntGen::class, conf = "0:${n3 - 1}")
     class LinCheckDynamicConnectivityConcurrentStressTest3 {
         private val dc = globalDcpConstructor.construct(n3)
+
+        init {
+            log.clear()
+        }
 
         @Operation
         fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
@@ -143,11 +153,21 @@ class ConcurrentDynamicConnectivityMultipleWriterTest(constructorId: Int) {
 
     @Test
     fun test2() {
-        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest2::class.java)
+        try {
+            LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest2::class.java)
+        } catch(e: Throwable) {
+            println(log.toString())
+            throw e
+        }
     }
 
     @Test
     fun test3() {
-        LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest3::class.java)
+        try {
+            LinChecker.check(LinCheckDynamicConnectivityConcurrentStressTest3::class.java)
+        } catch(e: Throwable) {
+            println(log.toString())
+            throw e
+        }
     }
 }

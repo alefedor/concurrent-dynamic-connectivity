@@ -252,6 +252,8 @@ internal inline fun Node.recalculate() {
 }
 
 internal fun Node.recalculateUpNonTreeEdges() {
+    // TODO: while?
+    // TODO: if (!hasNonTreeEdges) return
     hasNonTreeEdges = true
     parent?.recalculateUpNonTreeEdges()
 }

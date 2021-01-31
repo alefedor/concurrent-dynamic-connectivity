@@ -201,6 +201,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     states[replacementEdge] = makeState(SPANNING, r)
                     // as the edge was NON_SPANNING before, its info should be removed
                     levels[r].node(u).updateNonTreeEdges {
+                        // TODO: flags should not be set to true here
                         nonTreeEdges!!.remove(replacementEdge)
                     }
                     levels[r].node(v).updateNonTreeEdges {
@@ -273,7 +274,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         if (treeEdge != NO_EDGE) {
             node.currentLevelTreeEdge = NO_EDGE
             levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
-            require(states[treeEdge]!! == makeState(SPANNING, rank)) { "${states[treeEdge]?.status()} ${states[treeEdge]?.rank()}" } // for debug. TODO: remove
+            //require(states[treeEdge]!! == makeState(SPANNING, rank)) { "${states[treeEdge]?.status()} ${states[treeEdge]?.rank()}" } // for debug. TODO: remove
             states[treeEdge] = makeState(SPANNING, rank + 1)
         }
 

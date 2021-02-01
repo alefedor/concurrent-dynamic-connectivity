@@ -3,7 +3,6 @@ package connectivity.concurrent.general
 import connectivity.*
 import connectivity.NO_EDGE
 import connectivity.concurrent.tree.*
-import connectivity.concurrent.tree.recalculate
 import connectivity.sequential.general.DynamicConnectivity
 import connectivity.sequential.tree.updateNonTreeEdges
 import java.util.concurrent.locks.StampedLock
@@ -117,7 +116,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
         }
 
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateTreeEdges()
     }
 
     private fun findReplacement(node: ReadWriteFineGrainedETTNode, rank: Int, additionalRoot: ReadWriteFineGrainedETTNode): Edge {
@@ -172,7 +171,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
                 result = rightResult
         }
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateNonTreeEdges()
         return result
     }
 

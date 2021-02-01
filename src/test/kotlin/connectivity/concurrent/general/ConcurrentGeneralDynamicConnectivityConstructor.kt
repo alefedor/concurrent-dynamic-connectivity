@@ -5,8 +5,8 @@ import connectivity.concurrent.general.major_coarse_grained.MajorCoarseGrainedDy
 import connectivity.sequential.general.DynamicConnectivity
 
 enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
-    /*CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
-    CoarseGrainedReadWriteLockingDynamicConnectivity(::CoarseGrainedReadWriteLockingDynamicConnectivity),
+    CoarseGrainedLockingDynamicConnectivity(::CoarseGrainedLockingDynamicConnectivity),
+    /*CoarseGrainedReadWriteLockingDynamicConnectivity(::CoarseGrainedReadWriteLockingDynamicConnectivity),
     FineGrainedLockingDynamicConnectivity(::FineGrainedLockingDynamicConnectivity),
     FineGrainedReadWriteLockingDynamicConnectivity(::FineGrainedReadWriteLockingDynamicConnectivity),
     NBReadsCoarseGrainedLockingDynamicConnectivity(::NBReadsCoarseGrainedLockingDynamicConnectivity),
@@ -16,4 +16,3 @@ enum class ConcurrentGeneralDynamicConnectivityConstructor(val construct: (size:
     FCDynamicConnectivity( { size -> thirdparty.Aksenov239.fc.FCDynamicGraph(size, 3) })*/
 }
 
-var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.values()[0]

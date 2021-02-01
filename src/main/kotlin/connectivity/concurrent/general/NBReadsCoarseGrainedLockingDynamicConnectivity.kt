@@ -2,11 +2,9 @@ package connectivity.concurrent.general
 
 import connectivity.*
 import connectivity.NO_EDGE
-import connectivity.sequential.general.DynamicConnectivity
-import connectivity.concurrent.tree.ConcurrentEulerTourTree
-import connectivity.concurrent.tree.ConcurrentETTNode
-import connectivity.concurrent.tree.recalculate
+import connectivity.concurrent.tree.*
 import connectivity.concurrent.tree.updateNonTreeEdges
+import connectivity.sequential.general.DynamicConnectivity
 import connectivity.sequential.tree.updateNonTreeEdges
 
 class NBReadsCoarseGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
@@ -115,7 +113,7 @@ class NBReadsCoarseGrainedLockingDynamicConnectivity(private val size: Int) : Dy
             increaseTreeEdgesRank(it, u, v, rank)
         }
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateTreeEdges()
     }
 
     private fun findReplacement(node: ConcurrentETTNode, rank: Int, additionalRoot: ConcurrentETTNode): Edge {
@@ -170,7 +168,7 @@ class NBReadsCoarseGrainedLockingDynamicConnectivity(private val size: Int) : Dy
                 result = rightResult
         }
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateNonTreeEdges()
         return result
     }
 }

@@ -3,7 +3,6 @@ package connectivity.concurrent.general
 import connectivity.*
 import connectivity.NO_EDGE
 import connectivity.concurrent.tree.*
-import connectivity.concurrent.tree.recalculate
 import connectivity.sequential.general.DynamicConnectivity
 import connectivity.sequential.tree.updateNonTreeEdges
 
@@ -112,7 +111,7 @@ class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyna
             increaseTreeEdgesRank(it, u, v, rank)
         }
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateTreeEdges()
     }
 
     private fun findReplacement(node: ConcurrentFineGrainedETTNode, rank: Int, additionalRoot: ConcurrentFineGrainedETTNode): Edge {
@@ -167,7 +166,7 @@ class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyna
                 result = rightResult
         }
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateNonTreeEdges()
         return result
     }
 

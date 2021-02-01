@@ -8,6 +8,8 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import kotlin.system.measureTimeMillis
 
+private var globalDcpConstructor: ConcurrentGeneralDynamicConnectivityConstructor = ConcurrentGeneralDynamicConnectivityConstructor.values()[0]
+
 @RunWith(Parameterized::class)
 class PerformanceTest(dcp: ConcurrentGeneralDynamicConnectivityConstructor) {
     init {

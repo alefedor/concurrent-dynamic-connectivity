@@ -20,19 +20,19 @@ class GeneralDynamicConnectivityMultipleWriterExecutionGenerator(testConfigurati
     private val removeEdgeMethod: Method
     private val connectedMethod: Method
     private val scenarioGenerator = RandomScenarioGenerator()
-    private val random = Random(23)
+    private val random = Random(65413)
 
     init {
         var m = 0
         val iterations = 600
         repeat(iterations) {
-            m = max(m, testStructure.actorGenerators[0].generate().arguments.map { Integer::class.java.cast(it).toInt() }.max()!!)
+            m = max(m, testStructure.actorGenerators[0].generate(0).arguments.map { Integer::class.java.cast(it).toInt() }.max()!!)
         }
         n = m + 1
 
-        addEdgeMethod = testStructure.actorGenerators.first {  it.generate().method.name == "addEdge" }.generate().method
-        removeEdgeMethod = testStructure.actorGenerators.first {  it.generate().method.name == "removeEdge" }.generate().method
-        connectedMethod = testStructure.actorGenerators.first {  it.generate().method.name == "connected" }.generate().method
+        addEdgeMethod = testStructure.actorGenerators.first {  it.generate(0).method.name == "addEdge" }.generate(0).method
+        removeEdgeMethod = testStructure.actorGenerators.first {  it.generate(0).method.name == "removeEdge" }.generate(0).method
+        connectedMethod = testStructure.actorGenerators.first {  it.generate(0).method.name == "connected" }.generate(0).method
     }
 
     override fun nextExecution(): ExecutionScenario {

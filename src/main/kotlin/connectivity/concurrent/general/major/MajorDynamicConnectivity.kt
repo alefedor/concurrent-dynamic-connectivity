@@ -7,16 +7,6 @@ import java.io.File
 import java.lang.IllegalStateException
 import java.lang.StringBuilder
 
-val log = StringBuilder()
-//val file = File("/home/alexander/log.txt")
-//val printWriter = file.printWriter()
-
-inline fun appendInLog(m: String) {
-    /*synchronized(log) {
-        printWriter.appendln(m)
-    }*/
-}
-
 class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<MajorConcurrentEulerTourTree>
     private val states = ConcurrentEdgeMap<EdgeState>()
@@ -70,35 +60,30 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         val edge = makeEdge(u, v)
         val initialState = makeState(INITIAL, 0)
         val level = levels[0]
-        level.node(u).updateNonTreeEdges {
+        level.node(u).updateNonTreeEdges(true) {
             nonTreeEdges!!.add(edge)
         }
-        level.node(v).updateNonTreeEdges {
+        level.node(v).updateNonTreeEdges(true) {
             nonTreeEdges!!.add(edge)
         }
-        appendInLog("added info ${edge.u()} ${edge.v()}")
         val root = level.root(u)
         // check whether there is a concurrent edge addition
         val removeEdgeOperation = root.removeEdgeOperation
         if (removeEdgeOperation != null) {
-            appendInLog("parallel removal")
             // simple reads, because the only interesting case is when the replacement search
             // is not finished before the end of this code
             if (level.connectedSimple(u, v) && !level.connectedSimple(u, v, removeEdgeOperation.additionalRoot)) {
                 // can be a replacement
-                appendInLog("can be a replacement")
                 if (states.replace(edge, initialState, makeState(REPLACEMENT, 0))) {
                     // self fail, so that no one could add the edge
                     if (removeEdgeOperation.replacement.compareAndSet(NO_EDGE, edge)) {
-                        appendInLog("non-blocking addition written a replacement ${edge.u()} ${edge.v()}")
                         return true
                     }
 
-                    appendInLog("replacement writing failed")
-                    level.node(u).updateNonTreeEdges {
+                    level.node(u).updateNonTreeEdges(true) {
                         nonTreeEdges!!.remove(edge)
                     }
-                    level.node(v).updateNonTreeEdges {
+                    level.node(v).updateNonTreeEdges(true) {
                         nonTreeEdges!!.remove(edge)
                     }
 
@@ -110,14 +95,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         }
         // try to finish non-blocking addition
         if (connected(u, v) && states.replace(edge, initialState, makeState(NON_SPANNING, 0))) {
-            appendInLog("successful non-blocking addition ${edge.u()} ${edge.v()}")
             return true
         }
 
-        level.node(u).updateNonTreeEdges {
+        level.node(u).updateNonTreeEdges(false) {
             nonTreeEdges!!.remove(edge)
         }
-        level.node(v).updateNonTreeEdges {
+        level.node(v).updateNonTreeEdges(false) {
             nonTreeEdges!!.remove(edge)
         }
         return false
@@ -129,21 +113,19 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             val currentState = states[edge]!!
             val currentStatus = currentState.status()
             if (currentStatus == SPANNING) {
-                appendInLog("spanning removal $u $v")
                 withLockedComponents(u, v) {
                     doRemoveEdge(u, v)
                     return
                 }
             } else {
-                appendInLog("non-spanning removal $u $v")
                 if (currentStatus == REPLACEMENT) continue // active wait until the edge becomes TREE_EDGE
                 require(currentStatus == NON_SPANNING || currentStatus == REPLACEMENT) { "${currentStatus.status()} ${currentStatus.rank()}" } // can remove edge
                 val currentRank = currentState.rank()
                 if (states.replace(edge, currentState, makeState(REMOVED, currentState.rank()))) {
-                    levels[currentRank].node(u).updateNonTreeEdges {
+                    levels[currentRank].node(u).updateNonTreeEdges(false) {
                         nonTreeEdges!!.remove(edge)
                     }
-                    levels[currentRank].node(v).updateNonTreeEdges {
+                    levels[currentRank].node(v).updateNonTreeEdges(false) {
                         nonTreeEdges!!.remove(edge)
                     }
                     return
@@ -197,14 +179,12 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     result
                 }
                 if (replacementEdge != NO_EDGE) {
-                    appendInLog("found a replacement ${replacementEdge.u()} ${replacementEdge.v()}")
                     states[replacementEdge] = makeState(SPANNING, r)
                     // as the edge was NON_SPANNING before, its info should be removed
-                    levels[r].node(u).updateNonTreeEdges {
-                        // TODO: flags should not be set to true here
+                    levels[r].node(u).updateNonTreeEdges(false) {
                         nonTreeEdges!!.remove(replacementEdge)
                     }
-                    levels[r].node(v).updateNonTreeEdges {
+                    levels[r].node(v).updateNonTreeEdges(false) {
                         nonTreeEdges!!.remove(replacementEdge)
                     }
                     for (i in r downTo 0) {
@@ -220,7 +200,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     commonRoot.removeEdgeOperation = null
                     break
                 } else {
-                    appendInLog("replacement was not found")
                     // linearization point, do an actual split on this level
                     uRoot.version.inc()
                     vRoot.version.inc()
@@ -233,13 +212,12 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 increaseTreeEdgesRank(uRoot, u, v, r)
                 val replacementEdge = findReplacement(uRoot, r, lowerRoot)
                 if (replacementEdge != NO_EDGE) {
-                    appendInLog("found a replacement ${replacementEdge.u()} ${replacementEdge.v()}")
                     states[replacementEdge] = makeState(SPANNING, r)
                     // as the edge was NON_SPANNING before, its info should be removed
-                    levels[r].node(u).updateNonTreeEdges {
+                    levels[r].node(u).updateNonTreeEdges(false) {
                         nonTreeEdges!!.remove(replacementEdge)
                     }
-                    levels[r].node(v).updateNonTreeEdges {
+                    levels[r].node(v).updateNonTreeEdges(false) {
                         nonTreeEdges!!.remove(replacementEdge)
                     }
                     for (i in r downTo 0) {
@@ -254,7 +232,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     }
                     break
                 } else {
-                    appendInLog("replacement was not found")
                     // linearization point, do an actual split on this level
                     uRoot.version.inc()
                     vRoot.version.inc()
@@ -286,7 +263,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             increaseTreeEdgesRank(it, u, v, rank)
         }
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateTreeEdges()
     }
 
     private fun findReplacement(node: Node, rank: Int, additionalRoot: Node): Edge {
@@ -300,7 +277,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             val iterator = it.iterator()
             while (iterator.hasNext()) {
                 val edge = iterator.next()
-                appendInLog("traversed an edge ${edge.u()} ${edge.v()} (high level)")
                 val edgeState = states[edge] ?: continue // skip already deleted edges
                 if (edgeState.rank() != rank) continue // check that rank is correct
                 val status = edgeState.status()
@@ -315,30 +291,29 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     }
                     break
                 } else {
-                    appendInLog("edge promotion ${edge.u()} ${edge.v()}")
                     // promote non-tree edge
-                    levels[rank + 1].node(edge.u()).updateNonTreeEdges {
+                    levels[rank + 1].node(edge.u()).updateNonTreeEdges(true) {
                         this.nonTreeEdges!!.add(edge)
                     }
-                    levels[rank + 1].node(edge.v()).updateNonTreeEdges {
+                    levels[rank + 1].node(edge.v()).updateNonTreeEdges(true) {
                         this.nonTreeEdges!!.add(edge)
                     }
                     if (states.replace(edge, edgeState, makeState(NON_SPANNING, rank + 1))) {
                         // promotion is successful
                         // just remove info from the previous level
-                        levels[rank].node(edge.u()).updateNonTreeEdges {
+                        levels[rank].node(edge.u()).updateNonTreeEdges(false) {
                             this.nonTreeEdges!!.remove(edge)
                         }
-                        levels[rank].node(edge.v()).updateNonTreeEdges {
+                        levels[rank].node(edge.v()).updateNonTreeEdges(false) {
                             this.nonTreeEdges!!.remove(edge)
                         }
                     } else {
                         // promotion failed
                         // cancel the additions
-                        levels[rank + 1].node(edge.u()).updateNonTreeEdges {
+                        levels[rank + 1].node(edge.u()).updateNonTreeEdges(false) {
                             this.nonTreeEdges!!.remove(edge)
                         }
-                        levels[rank + 1].node(edge.v()).updateNonTreeEdges {
+                        levels[rank + 1].node(edge.v()).updateNonTreeEdges(false) {
                             this.nonTreeEdges!!.remove(edge)
                         }
                     }
@@ -357,7 +332,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 result = rightResult
         }
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateNonTreeEdges()
         return result
     }
 
@@ -376,7 +351,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             mainLoop@while (iterator.hasNext()) {
                 val edge = iterator.next()
                 //iterator.remove()
-                appendInLog("traversed an edge ${edge.u()} ${edge.v()}")
                 var edgeState = states[edge] ?: continue // skip already deleted edges
                 if (edgeState.rank() != 0) continue // check that rank is correct
                 when (edgeState.status()) {
@@ -387,10 +361,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                         // check if can make the edge non-spanning
                         if (levels[0].connectedSimple(u, v)) {
                             // add info about the edge
-                            levels[0].node(v).updateNonTreeEdges {
+                            levels[0].node(v).updateNonTreeEdges(true) {
                                 this.nonTreeEdges!!.add(edge)
                             }
-                            levels[0].node(u).updateNonTreeEdges {
+                            levels[0].node(u).updateNonTreeEdges(true) {
                                 this.nonTreeEdges!!.add(edge)
                             }
                             if (states.replace(edge, edgeState, makeState(NON_SPANNING, 0))) {
@@ -398,10 +372,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                             } else {
                                 // the edge was added by another thread
                                 // cancel the additions
-                                levels[0].node(v).updateNonTreeEdges {
+                                levels[0].node(v).updateNonTreeEdges(false) {
                                     this.nonTreeEdges!!.remove(edge)
                                 }
-                                levels[0].node(u).updateNonTreeEdges {
+                                levels[0].node(u).updateNonTreeEdges(false) {
                                     this.nonTreeEdges!!.remove(edge)
                                 }
                             }
@@ -417,16 +391,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 }
                 // expect that the state is NON_SPANNING now
                 edgeState = makeState(NON_SPANNING, 0)
-                appendInLog("try an edge ${edge.u()} ${edge.v()}")
                 // is a non-spanning or already removed edge here
                 if (!levels[0].connectedSimple(edge.u(), edge.v(), additionalRoot)) {
                     // can be a replacement
                     if (states.replace(edge, edgeState, makeState(REPLACEMENT, 0))) {
                         if (currentOperationInfo.replacement.compareAndSet(NO_EDGE, edge)) {
-                            appendInLog("replacement edge was written by the search ${edge.u()} ${edge.v()}")
                             // success
                         } else {
-                            appendInLog("somebody was faster ${edge.u()} ${edge.v()}")
                             // somebody found a replacement before we did
                             // return the state of our replacement
                             states[edge] = edgeState
@@ -438,30 +409,29 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                         // the edge was removed
                     }
                 } else {
-                    appendInLog("edge promotion ${edge.u()} ${edge.v()}")
                     // promote non-tree edge
-                    levels[1].node(edge.u()).updateNonTreeEdges {
+                    levels[1].node(edge.u()).updateNonTreeEdges(true) {
                         this.nonTreeEdges!!.add(edge)
                     }
-                    levels[1].node(edge.v()).updateNonTreeEdges {
+                    levels[1].node(edge.v()).updateNonTreeEdges(true) {
                         this.nonTreeEdges!!.add(edge)
                     }
                     if (states.replace(edge, edgeState, makeState(NON_SPANNING, 1))) {
                         // promotion is successful
                         // just remove info from the previous level
-                        levels[0].node(edge.u()).updateNonTreeEdges {
+                        levels[0].node(edge.u()).updateNonTreeEdges(false) {
                             this.nonTreeEdges!!.remove(edge)
                         }
-                        levels[0].node(edge.v()).updateNonTreeEdges {
+                        levels[0].node(edge.v()).updateNonTreeEdges(false) {
                             this.nonTreeEdges!!.remove(edge)
                         }
                     } else {
                         // promotion failed
                         // cancel the additions
-                        levels[1].node(edge.u()).updateNonTreeEdges {
+                        levels[1].node(edge.u()).updateNonTreeEdges(false) {
                             this.nonTreeEdges!!.remove(edge)
                         }
-                        levels[1].node(edge.v()).updateNonTreeEdges {
+                        levels[1].node(edge.v()).updateNonTreeEdges(false) {
                             this.nonTreeEdges!!.remove(edge)
                         }
                     }
@@ -477,7 +447,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             val foundReplacementInRight = node.right?.let { findReplacement0(it, additionalRoot, currentOperationInfo) } ?: false
             foundReplacement = foundReplacementInRight
         }
-        node.recalculate()
+        node.recalculateNonTreeEdges()
         return foundReplacement
     }
 
@@ -500,11 +470,20 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 uRoot = vRoot
                 vRoot = tmpNode
             }
-            synchronized(uRoot) {
-                synchronized(vRoot) {
-                    if (uRoot == root(u) && vRoot == root(v)) {
+            if (uRoot === vRoot) {
+                synchronized(uRoot) {
+                    if (uRoot == root(u)) {
                         body()
                         return
+                    }
+                }
+            } else {
+                synchronized(uRoot) {
+                    synchronized(vRoot) {
+                        if (uRoot == root(u) && vRoot == root(v)) {
+                            body()
+                            return
+                        }
                     }
                 }
             }

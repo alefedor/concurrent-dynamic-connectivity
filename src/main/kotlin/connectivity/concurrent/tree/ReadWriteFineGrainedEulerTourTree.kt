@@ -2,13 +2,9 @@ package connectivity.concurrent.tree
 
 import connectivity.*
 import connectivity.NO_EDGE
-import connectivity.concurrent.general.major.Node
-import connectivity.sequential.tree.TreeDynamicConnectivity
-import java.util.*
-import java.util.concurrent.locks.ReentrantReadWriteLock
+import connectivity.sequential.tree.*
+import java.util.concurrent.*
 import java.util.concurrent.locks.StampedLock
-import kotlin.collections.HashSet
-import kotlin.random.Random
 
 class ReadWriteFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
@@ -59,14 +55,15 @@ class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity
         val uvEdge = makeDirectedEdge(u, v)
         val vuEdge = makeDirectedEdge(v, u)
 
+        val random = ThreadLocalRandom.current()
         // create nodes corresponding to two directed copies of the new edge
         val uvNode = ReadWriteFineGrainedETTNode(
-            size + Random.nextInt(10 * size),
+            size + random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = ReadWriteFineGrainedETTNode(
-            size + Random.nextInt(10 * size),
+            size + random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -162,7 +159,7 @@ class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity
             val division = split(node.right, sizeLeft - toTheLeft)
             node.right = division.first
             node.right?.parent = node
-            node.recalculate()
+            node.recalculateAll()
             division.first = node
             division
         } else {
@@ -170,7 +167,7 @@ class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity
             val division = split(node.left, sizeLeft)
             node.left = division.second
             node.left?.parent = node
-            node.recalculate()
+            node.recalculateAll()
             division.second = node
             division
         }
@@ -182,12 +179,12 @@ class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity
         return if (a.priority < b.priority) {
             a.right = merge(a.right, b)
             a.right?.parent = a
-            a.recalculate()
+            a.recalculateAll()
             a
         } else {
             b.left = merge(a, b.left)
             b.left?.parent = b
-            b.recalculate()
+            b.recalculateAll()
             b
         }
     }
@@ -207,20 +204,32 @@ class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity
     }
 }
 
-internal inline fun ReadWriteFineGrainedETTNode.recalculate() {
+internal inline fun ReadWriteFineGrainedETTNode.recalculateAll() {
+    recalculateSize()
+    recalculateNonTreeEdges()
+    recalculateTreeEdges()
+}
+
+internal inline fun ReadWriteFineGrainedETTNode.recalculateSize() {
     size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
-    hasNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
+}
+
+internal inline fun ReadWriteFineGrainedETTNode.recalculateTreeEdges() {
     hasCurrentLevelTreeEdges = currentLevelTreeEdge != connectivity.NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
 }
 
-internal fun ReadWriteFineGrainedETTNode.recalculateUp() {
-    recalculate()
-    parent?.recalculateUp()
+internal inline fun ReadWriteFineGrainedETTNode.recalculateNonTreeEdges() {
+    hasNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
 }
 
 internal fun ReadWriteFineGrainedETTNode.recalculateUpNonTreeEdges() {
-    hasNonTreeEdges = true
-    parent?.recalculateUpNonTreeEdges()
+    var node: ReadWriteFineGrainedETTNode? = this
+    while (node != null) {
+        val shouldHaveNonTreeEdges = (node.nonTreeEdges?.isNotEmpty() ?: false) || (node.left?.hasNonTreeEdges ?: false) || (node.right?.hasNonTreeEdges ?: false)
+        if (node.hasNonTreeEdges == shouldHaveNonTreeEdges) return
+        node.hasNonTreeEdges = shouldHaveNonTreeEdges
+        node = node.parent
+    }
 }
 
 internal inline fun ReadWriteFineGrainedETTNode.updateNonTreeEdges(body: ReadWriteFineGrainedETTNode.() -> Unit) {

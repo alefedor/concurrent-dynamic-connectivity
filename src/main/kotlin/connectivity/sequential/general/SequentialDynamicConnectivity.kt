@@ -106,7 +106,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
         }
 
         // recalculate flags after updates
-        node.recalculate()
+        node.recalculateTreeEdges()
     }
 
     private fun findReplacement(node: SequentialETTNode, rank: Int): Edge {
@@ -160,7 +160,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
             if (rightResult != NO_EDGE)
                 result = rightResult
         }
-        node.recalculate()
+        node.recalculateNonTreeEdges()
         return result
     }
 }

@@ -3,6 +3,8 @@ package connectivity.sequential.tree
 import connectivity.*
 import connectivity.NO_EDGE
 import connectivity.concurrent.general.major.Node
+import connectivity.concurrent.tree.*
+import connectivity.sequential.tree.recalculateUpNonTreeEdges
 import java.util.*
 import kotlin.random.Random
 
@@ -134,7 +136,7 @@ class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val division = split(node.right, sizeLeft - toTheLeft)
             node.right = division.first
             node.right?.parent = node
-            node.recalculate()
+            node.recalculateAll()
             division.first = node
             division
         } else {
@@ -142,7 +144,7 @@ class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val division = split(node.left, sizeLeft)
             node.left = division.second
             node.left?.parent = node
-            node.recalculate()
+            node.recalculateAll()
             division.second = node
             division
         }
@@ -154,12 +156,12 @@ class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         return if (a.priority < b.priority) {
             a.right = merge(a.right, b)
             a.right?.parent = a
-            a.recalculate()
+            a.recalculateAll()
             a
         } else {
             b.left = merge(a, b.left)
             b.left?.parent = b
-            b.recalculate()
+            b.recalculateAll()
             b
         }
     }
@@ -178,20 +180,32 @@ class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 }
 
-internal inline fun SequentialETTNode.recalculate() {
-    size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
-    hasNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
-    hasCurrentLevelTreeEdges = currentLevelTreeEdge != NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+internal inline fun SequentialETTNode.recalculateAll() {
+    recalculateSize()
+    recalculateNonTreeEdges()
+    recalculateTreeEdges()
 }
 
-internal fun SequentialETTNode.recalculateUp() {
-    recalculate()
-    parent?.recalculateUp()
+internal inline fun SequentialETTNode.recalculateSize() {
+    size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
+}
+
+internal inline fun SequentialETTNode.recalculateTreeEdges() {
+    hasCurrentLevelTreeEdges = currentLevelTreeEdge != connectivity.NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+}
+
+internal inline fun SequentialETTNode.recalculateNonTreeEdges() {
+    hasNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
 }
 
 internal fun SequentialETTNode.recalculateUpNonTreeEdges() {
-    hasNonTreeEdges = true
-    parent?.recalculateUpNonTreeEdges()
+    var node: SequentialETTNode? = this
+    while (node != null) {
+        val shouldHaveNonTreeEdges = (node.nonTreeEdges?.isNotEmpty() ?: false) || (node.left?.hasNonTreeEdges ?: false) || (node.right?.hasNonTreeEdges ?: false)
+        if (node.hasNonTreeEdges == shouldHaveNonTreeEdges) return
+        node.hasNonTreeEdges = shouldHaveNonTreeEdges
+        node = node.parent
+    }
 }
 
 internal inline fun SequentialETTNode.updateNonTreeEdges(body: SequentialETTNode.() -> Unit) {

@@ -2,7 +2,12 @@ package connectivity.concurrent.tree
 
 import connectivity.*
 import connectivity.NO_EDGE
-import connectivity.sequential.tree.TreeDynamicConnectivity
+import connectivity.concurrent.tree.recalculateNonTreeEdges
+import connectivity.concurrent.tree.recalculateSize
+import connectivity.concurrent.tree.recalculateTreeEdges
+import connectivity.concurrent.tree.recalculateUpNonTreeEdges
+import connectivity.sequential.tree.*
+import java.util.concurrent.*
 import kotlin.random.Random
 
 class ConcurrentETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
@@ -57,14 +62,15 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val uvEdge = makeDirectedEdge(u, v)
         val vuEdge = makeDirectedEdge(v, u)
 
+        val random = ThreadLocalRandom.current()
         // create nodes corresponding to two directed copies of the new edge
         val uvNode = ConcurrentETTNode(
-            size + Random.nextInt(10 * size),
+            size + random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = ConcurrentETTNode(
-            size + Random.nextInt(10 * size),
+            size + random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -185,7 +191,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val division = split(node.right, sizeLeft - toTheLeft)
             node.right = division.first
             node.right?.parent = node
-            node.recalculate()
+            node.recalculateAll()
             division.first = node
             division
         } else {
@@ -193,7 +199,7 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val division = split(node.left, sizeLeft)
             node.left = division.second
             node.left?.parent = node
-            node.recalculate()
+            node.recalculateAll()
             division.second = node
             division
         }
@@ -205,12 +211,12 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         return if (a.priority < b.priority) {
             a.right = merge(a.right, b)
             a.right?.parent = a
-            a.recalculate()
+            a.recalculateAll()
             a
         } else {
             b.left = merge(a, b.left)
             b.left?.parent = b
-            b.recalculate()
+            b.recalculateAll()
             b
         }
     }
@@ -230,20 +236,32 @@ class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 }
 
-internal inline fun ConcurrentETTNode.recalculate() {
-    size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
-    hasNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
-    hasCurrentLevelTreeEdges = currentLevelTreeEdge != NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+internal inline fun ConcurrentETTNode.recalculateAll() {
+    recalculateSize()
+    recalculateNonTreeEdges()
+    recalculateTreeEdges()
 }
 
-internal fun ConcurrentETTNode.recalculateUp() {
-    recalculate()
-    parent?.recalculateUp()
+internal inline fun ConcurrentETTNode.recalculateSize() {
+    size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
+}
+
+internal inline fun ConcurrentETTNode.recalculateTreeEdges() {
+    hasCurrentLevelTreeEdges = currentLevelTreeEdge != connectivity.NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+}
+
+internal inline fun ConcurrentETTNode.recalculateNonTreeEdges() {
+    hasNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
 }
 
 internal fun ConcurrentETTNode.recalculateUpNonTreeEdges() {
-    hasNonTreeEdges = true
-    parent?.recalculateUpNonTreeEdges()
+    var node: ConcurrentETTNode? = this
+    while (node != null) {
+        val shouldHaveNonTreeEdges = (node.nonTreeEdges?.isNotEmpty() ?: false) || (node.left?.hasNonTreeEdges ?: false) || (node.right?.hasNonTreeEdges ?: false)
+        if (node.hasNonTreeEdges == shouldHaveNonTreeEdges) return
+        node.hasNonTreeEdges = shouldHaveNonTreeEdges
+        node = node.parent
+    }
 }
 
 internal inline fun ConcurrentETTNode.updateNonTreeEdges(body: ConcurrentETTNode.() -> Unit) {

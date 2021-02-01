@@ -4,8 +4,13 @@ import com.google.common.collect.ConcurrentHashMultiset
 import connectivity.ConcurrentEdgeMap
 import connectivity.Edge
 import connectivity.NO_EDGE
+import connectivity.concurrent.general.major.recalculateNonTreeEdges
+import connectivity.concurrent.general.major.recalculateSize
+import connectivity.concurrent.general.major.recalculateTreeEdges
+import connectivity.concurrent.general.major.recalculateUpNonTreeEdges
 import connectivity.makeDirectedEdge
-import connectivity.sequential.tree.TreeDynamicConnectivity
+import connectivity.sequential.tree.*
+import java.util.concurrent.*
 import kotlin.random.Random
 
 class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
@@ -34,7 +39,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
         val priorities = MutableList(size) { it }
-        priorities.shuffle()
+        priorities.shuffle(Random(57167))
         nodes = Array(size) { Node(priorities[it]) }
     }
 
@@ -64,13 +69,14 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         val vuEdge = makeDirectedEdge(v, u)
 
         // create nodes corresponding to two directed copies of the new edge
+        val random = ThreadLocalRandom.current()
         val uvNode = Node(
-            size + Random.nextInt(10 * size),
+            size + random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && u < v) uvEdge else NO_EDGE
         )
         val vuNode = Node(
-            size + Random.nextInt(10 * size),
+            size + random.nextInt(10 * size),
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
@@ -193,7 +199,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val division = split(node.right, sizeLeft - toTheLeft)
             node.right = division.first
             node.right?.parent = node
-            node.recalculate()
+            node.recalculateAll()
             division.first = node
             division
         } else {
@@ -201,7 +207,7 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             val division = split(node.left, sizeLeft)
             node.left = division.second
             node.left?.parent = node
-            node.recalculate()
+            node.recalculateAll()
             division.second = node
             division
         }
@@ -213,12 +219,12 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         return if (a.priority < b.priority) {
             a.right = merge(a.right, b)
             a.right?.parent = a
-            a.recalculate()
+            a.recalculateAll()
             a
         } else {
             b.left = merge(a, b.left)
             b.left?.parent = b
-            b.recalculate()
+            b.recalculateAll()
             b
         }
     }
@@ -238,27 +244,41 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     }
 }
 
-internal inline fun Node.recalculate() {
+internal inline fun Node.recalculateAll() {
+    recalculateSize()
+    recalculateNonTreeEdges()
+    recalculateTreeEdges()
+}
+
+internal inline fun Node.recalculateSize() {
     size = 1 + (left?.size ?: 0) + (right?.size ?: 0)
+}
+
+internal inline fun Node.recalculateTreeEdges() {
+    hasCurrentLevelTreeEdges = currentLevelTreeEdge != connectivity.NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+}
+
+internal inline fun Node.recalculateNonTreeEdges() {
     val shouldHaveNonTreeEdges = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
     hasNonTreeEdges = shouldHaveNonTreeEdges
     if (!shouldHaveNonTreeEdges) {
-        // the second check is needed, because could accidentally rewrite value written by non-blocking additions
         val shouldHaveNonTreeEdges2 = (nonTreeEdges?.isNotEmpty() ?: false) || (left?.hasNonTreeEdges ?: false) || (right?.hasNonTreeEdges ?: false)
         if (shouldHaveNonTreeEdges2)
-            hasNonTreeEdges = true
+            hasNonTreeEdges = true        
     }
-    hasCurrentLevelTreeEdges = currentLevelTreeEdge != NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
 }
 
 internal fun Node.recalculateUpNonTreeEdges() {
-    // TODO: while?
-    // TODO: if (!hasNonTreeEdges) return
-    hasNonTreeEdges = true
-    parent?.recalculateUpNonTreeEdges()
+    var node: Node? = this
+    while (node != null) {
+        if (node.hasNonTreeEdges) return
+        node.hasNonTreeEdges = true
+        node = node.parent
+    }
 }
 
-internal inline fun Node.updateNonTreeEdges(body: Node.() -> Unit) {
+internal inline fun Node.updateNonTreeEdges(isAdd: Boolean, body: Node.() -> Unit) {
     body()
-    recalculateUpNonTreeEdges()
+    if (isAdd)
+        recalculateUpNonTreeEdges()
 }

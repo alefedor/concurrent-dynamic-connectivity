@@ -7,7 +7,7 @@ buildscript {
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.4.21'
-    id "me.champeau.gradle.jmh" version "0.5.2"
+    id "me.champeau.gradle.jmh" version "0.4.8"
 }
 
 apply plugin: 'idea'
@@ -31,7 +31,7 @@ repositories {
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.4.21"
     compile 'org.jetbrains.kotlinx:lincheck:2.11'
     compile group: 'org.jctools', name: 'jctools-core', version: '3.2.0'
     compile group: 'it.unimi.dsi', name: 'fastutil', version: '8.5.1'

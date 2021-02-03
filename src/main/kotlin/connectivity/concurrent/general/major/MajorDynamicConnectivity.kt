@@ -209,7 +209,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                             val (ur, vr) = levels[i].removeEdge(u, v, false)
                             if (ur.parent != null) ur else vr
                         }
-
                         levels[i].addEdge(replacementEdge.u(), replacementEdge.v(), i == r, lr)
                     }
                     commonRoot.removeEdgeOperation = null

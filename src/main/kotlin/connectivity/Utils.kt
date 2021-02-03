@@ -3,7 +3,7 @@ package connectivity
 import kotlin.math.max
 import kotlin.math.min
 
-const val BITS = 32
+const val BITS = 22
 const val MASK = (1L shl BITS) - 1
 
 // getters for endpoints of an edge

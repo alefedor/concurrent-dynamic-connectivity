@@ -6,6 +6,7 @@ import benchmarks.util.generators.DecrementalScenarioGenerator
 import org.openjdk.jmh.annotations.*
 import java.util.concurrent.TimeUnit
 
+/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -47,8 +48,8 @@ open class CommonDynamicConnectivityDecrementalBenchmark {
     fun flushOut() {
         println()
     }
-}
-
+}*/
+/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -88,4 +89,4 @@ open class LockElisionDynamicConnectivityDecrementalBenchmark {
     fun flushOut() {
         println()
     }
-}
+}*/

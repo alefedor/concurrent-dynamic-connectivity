@@ -108,6 +108,7 @@ open class Common2DynamicConnectivityRandomBenchmark {
     }
 }
 
+/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -153,7 +154,7 @@ open class LockElisionDynamicConnectivityRandomBenchmark {
     fun flushOut() {
         println()
     }
-}
+}*/
 
 fun getTotalScenarioSize(graphParams: GraphParams, readWeight: Int): Int {
     var result = when(graphParams) {

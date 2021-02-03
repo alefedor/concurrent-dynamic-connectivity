@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 private const val components = 500
 private const val nodesPerComponent = 70
 
+/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -47,8 +48,9 @@ open class CommonDynamicConnectivityTwoLevelBenchmark {
     fun flushOut() {
         println()
     }
-}
+}*/
 
+/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -85,4 +87,4 @@ open class LockElisionDynamicConnectivityTwoLevelBenchmark {
     fun flushOut() {
         println()
     }
-}
+}*/

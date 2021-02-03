@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 @Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 @Warmup(iterations = warmupIterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 open class CommonDynamicConnectivityRandomBenchmark {
-    @Param
+    @Param("USA_ROADS", "RANDOM_N")
     open var graphParams: GraphParams = GraphParams.values()[0]
 
     lateinit var scenario: Scenario
@@ -61,7 +61,7 @@ open class CommonDynamicConnectivityRandomBenchmark {
 @Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 @Warmup(iterations = warmupIterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 open class LockElisionDynamicConnectivityRandomBenchmark {
-    @Param
+    @Param("USA_ROADS", "RANDOM_N")
     open var graphParams: GraphParams = GraphParams.values()[0]
 
     lateinit var scenario: Scenario

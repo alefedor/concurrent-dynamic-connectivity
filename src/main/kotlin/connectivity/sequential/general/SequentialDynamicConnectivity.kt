@@ -120,7 +120,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
             val iterator = it.iterator()
 
             while (iterator.hasNext()) {
-                val edge = iterator.nextLong()
+                val edge = iterator.next()
 
                 // remove edge from another node too
                 val firstNode = level.node(edge.u())

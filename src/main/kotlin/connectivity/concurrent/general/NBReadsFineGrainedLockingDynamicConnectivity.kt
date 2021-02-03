@@ -38,7 +38,7 @@ class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyna
 
     override fun removeEdge(u: Int, v: Int) = withLockedComponents(u, v) {
             val edge = makeEdge(u, v)
-            val rank = ranks[edge]!!
+            val rank = ranks[edge] ?: return
             ranks.removeIf(edge)
             val level = levels[rank]
 
@@ -124,7 +124,7 @@ class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyna
             val iterator = it.iterator()
 
             while (iterator.hasNext()) {
-                val edge = iterator.nextLong()
+                val edge = iterator.next()
 
                 // remove edge from another node too
                 val firstNode = level.node(edge.u())

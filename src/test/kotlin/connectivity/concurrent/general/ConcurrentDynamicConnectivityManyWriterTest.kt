@@ -1,14 +1,13 @@
 package connectivity.concurrent.general
 
+import connectivity.*
 import connectivity.concurrent.GeneralDynamicConnectivityMultipleWriterExecutionGenerator
 import connectivity.concurrent.general.major.*
 import connectivity.concurrent.general.major_coarse_grained.*
 import connectivity.sequential.SlowConnectivity
 import connectivity.sequential.general.*
 import org.jetbrains.kotlinx.lincheck.LinChecker
-import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
-import org.jetbrains.kotlinx.lincheck.annotations.Operation
-import org.jetbrains.kotlinx.lincheck.annotations.Param
+import org.jetbrains.kotlinx.lincheck.annotations.*
 import org.jetbrains.kotlinx.lincheck.execution.*
 import org.jetbrains.kotlinx.lincheck.paramgen.IntGen
 import org.jetbrains.kotlinx.lincheck.strategy.managed.modelchecking.*
@@ -21,9 +20,9 @@ private const val n1 = 5
 private const val n2 = 7
 
 private const val actorsPerThread = 3
-private const val stressIterations = 50
-private const val modelCheckingIterations = 3
-private const val invocations = 4000
+private const val stressIterations = 0
+private const val modelCheckingIterations = 200
+private const val invocations = 12000
 private const val threads = 3
 
 abstract class LincheckManyThreadsTest(val minimizeScenario: Boolean, val executionGenerator: Class<out ExecutionGenerator>?) {
@@ -44,6 +43,14 @@ abstract class LincheckManyThreadsTest(val minimizeScenario: Boolean, val execut
     @Operation
     fun connected(@Param(name = "a") a: Int, @Param(name = "a") b: Int) = dc.connected(a, b)
 
+
+    @StateRepresentation
+    fun stateRepresentation(): String {
+        return (dc as MajorDynamicConnectivity).states
+            .mapValues { "(s:${ it.value.status() },r:${it.value.rank()})" }
+            .mapKeys { "(${it.key.u()},${it.key.v()})" }
+            .toString()
+    }
 
     @Test
     fun stress() {
@@ -70,6 +77,7 @@ abstract class LincheckManyThreadsTest(val minimizeScenario: Boolean, val execut
             if (executionGenerator != null)
                 executionGenerator(executionGenerator)
             minimizeFailedScenario(minimizeScenario)
+            verboseTrace(true)
             requireStateEquivalenceImplCheck(false)
             sequentialSpecification(DynamicConnectivitySequentialSpecification::class.java)
             threads(threads)
@@ -97,7 +105,7 @@ abstract class LinCheckDynamicConnectivityManyThreadsTest2(
 }
 
 class MajorDCManyThreadsTest1 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, true, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
-class MajorDCManyThreadsTest2 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, true, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
+class MajorDCManyThreadsTest2 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, false, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
 class MajorDCManyThreadsTest3 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, true, null)
 class MajorDCManyThreadsTest4 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, true, null)
 

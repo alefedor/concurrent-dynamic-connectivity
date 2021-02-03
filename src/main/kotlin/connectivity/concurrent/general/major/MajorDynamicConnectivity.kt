@@ -6,7 +6,7 @@ import java.lang.IllegalStateException
 
 class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<MajorConcurrentEulerTourTree>
-    private val states = ConcurrentEdgeMap<EdgeState>()
+    val states = ConcurrentEdgeMap<EdgeState>()
 
     init {
         var levelNumber = 1

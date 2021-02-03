@@ -157,7 +157,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private fun nonSpanningRemoveEdge(u: Int, v: Int, currentState: Int, edge: Long): Boolean {
         // currentState.status() should be NON_SPANNING
         val currentRank = currentState.rank()
-        if (states.remove(edge, currentState)) {
+        if (states.removeIf(edge, currentState)) {
             removeInfo(levels[currentRank].node(u), levels[currentRank].node(v), edge)
             return true
         }
@@ -243,7 +243,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 }
             }
         }
-        states.remove(edge)
+        states.removeIf(edge)
     }
 
     override fun connected(u: Int, v: Int) = levels[0].connected(u, v)

@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit
 private const val components = 500
 private const val nodesPerComponent = 70
 
-/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -41,16 +40,15 @@ open class CommonDynamicConnectivityTwoLevelBenchmark {
     fun initializeInvocation() {
         scenarioExecutor = ScenarioExecutor(
             scenario,
-            { size -> dcpConstructor.construct(size, workers + 1) })
+            { size -> dcpConstructor.constructor()(size, workers + 1) })
     }
 
     @Setup(Level.Iteration)
     fun flushOut() {
         println()
     }
-}*/
+}
 
-/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -80,11 +78,11 @@ open class LockElisionDynamicConnectivityTwoLevelBenchmark {
 
     @Setup(Level.Invocation)
     fun initializeInvocation() {
-        scenarioExecutor = ScenarioExecutor(scenario, dcpConstructor.construct)
+        scenarioExecutor = ScenarioExecutor(scenario, dcpConstructor.constructor())
     }
 
     @Setup(Level.Iteration)
     fun flushOut() {
         println()
     }
-}*/
+}

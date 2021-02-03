@@ -6,7 +6,7 @@ import kotlin.random.Random
 
 class TwoLevelScenarioGenerator {
     private val rnd = Random(295)
-    private val randomScenarioGenerator = RandomScenarioGenerator()
+    private val randomScenarioGenerator = FullyRandomScenarioGenerator()
 
     fun generate(components: Int, nodesPerComponent: Int, threads: Int, sizePerThread: Int): Scenario {
         val presentEdges = LongOpenHashSet()

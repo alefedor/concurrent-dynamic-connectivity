@@ -6,11 +6,10 @@ import benchmarks.util.generators.DecrementalScenarioGenerator
 import org.openjdk.jmh.annotations.*
 import java.util.concurrent.TimeUnit
 
-/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 4, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 @Warmup(iterations = warmupIterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 open class CommonDynamicConnectivityDecrementalBenchmark {
     @Param
@@ -41,19 +40,20 @@ open class CommonDynamicConnectivityDecrementalBenchmark {
     fun initializeInvocation() {
         scenarioExecutor = SuccessiveScenarioExecutor(
             scenario,
-            { size -> dcpConstructor.construct(size, workers + 1) })
+            { size -> dcpConstructor.constructor()(size, workers + 1) })
     }
 
     @Setup(Level.Iteration)
     fun flushOut() {
         println()
     }
-}*/
-/*
+}
+
+
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 4, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 @Warmup(iterations = warmupIterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 open class LockElisionDynamicConnectivityDecrementalBenchmark {
     @Param
@@ -82,11 +82,11 @@ open class LockElisionDynamicConnectivityDecrementalBenchmark {
 
     @Setup(Level.Invocation)
     fun initializeInvocation() {
-        scenarioExecutor = SuccessiveScenarioExecutor(scenario, dcpConstructor.construct)
+        scenarioExecutor = SuccessiveScenarioExecutor(scenario, dcpConstructor.constructor())
     }
 
     @Setup(Level.Iteration)
     fun flushOut() {
         println()
     }
-}*/
+}

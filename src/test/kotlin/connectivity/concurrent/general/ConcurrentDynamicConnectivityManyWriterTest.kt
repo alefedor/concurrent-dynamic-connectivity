@@ -2,6 +2,7 @@ package connectivity.concurrent.general
 
 import connectivity.concurrent.GeneralDynamicConnectivityMultipleWriterExecutionGenerator
 import connectivity.concurrent.general.major.*
+import connectivity.concurrent.general.major_coarse_grained.*
 import connectivity.sequential.SlowConnectivity
 import connectivity.sequential.general.*
 import org.jetbrains.kotlinx.lincheck.LinChecker
@@ -20,9 +21,9 @@ private const val n1 = 5
 private const val n2 = 7
 
 private const val actorsPerThread = 3
-private const val stressIterations = 0
-private const val modelCheckingIterations = 200
-private const val invocations = 12000
+private const val stressIterations = 50
+private const val modelCheckingIterations = 3
+private const val invocations = 4000
 private const val threads = 3
 
 abstract class LincheckManyThreadsTest(val minimizeScenario: Boolean, val executionGenerator: Class<out ExecutionGenerator>?) {
@@ -95,8 +96,8 @@ abstract class LinCheckDynamicConnectivityManyThreadsTest2(
     override val dc = dynamicConnectivityConstructor(n2)
 }
 
-class MajorDCManyThreadsTest1 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, false, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
-class MajorDCManyThreadsTest2 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, false, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
+class MajorDCManyThreadsTest1 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, true, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
+class MajorDCManyThreadsTest2 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, true, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
 class MajorDCManyThreadsTest3 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, true, null)
 class MajorDCManyThreadsTest4 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, true, null)
 

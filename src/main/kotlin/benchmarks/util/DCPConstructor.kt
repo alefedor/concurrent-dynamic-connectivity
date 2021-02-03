@@ -6,39 +6,71 @@ import connectivity.concurrent.general.major_coarse_grained.MajorCoarseGrainedDy
 import connectivity.sequential.general.DynamicConnectivity
 import thirdparty.Aksenov239.fc.FCDynamicGraph
 
-enum class DCPConstructor(val construct: (Int, Int) -> DynamicConnectivity) {
-    /*NBReadsCoarseGrainedLockingDCP(addTrivialParameter(::NBReadsCoarseGrainedLockingDynamicConnectivity)),
-    NBReadsFineGrainedLockingDynamicConnectivity(addTrivialParameter(::NBReadsFineGrainedLockingDynamicConnectivity)),*/
-    MajorDynamicConnectivity(addTrivialParameter(::MajorDynamicConnectivity)),
-    /*MajorCoarseGrainedDynamicConnectivity(addTrivialParameter(::MajorCoarseGrainedDynamicConnectivity)),
-    FCReadOptimizedDynamicConnectivity(::FCDynamicGraph),*/
-    CoarseGrainedLockingDCP(addTrivialParameter(::CoarseGrainedLockingDynamicConnectivity)),/*
-    CoarseGrainedReadWriteLockingDCP(addTrivialParameter(::CoarseGrainedReadWriteLockingDynamicConnectivity)),
-    FineGrainedLockingDCP(addTrivialParameter(::FineGrainedLockingDynamicConnectivity)),
-    FineGrainedReadWriteLockingDynamicConnectivity(addTrivialParameter(::FineGrainedReadWriteLockingDynamicConnectivity)),*/
+enum class DCPConstructor {
+    NBReadsCoarseGrainedLockingDCP,
+    NBReadsFineGrainedLockingDynamicConnectivity,
+    MajorDynamicConnectivity,
+    MajorCoarseGrainedDynamicConnectivity,
+    FCReadOptimizedDynamicConnectivity,
+    CoarseGrainedLockingDCP,
+    CoarseGrainedReadWriteLockingDCP,
+    FineGrainedLockingDCP,
+    FineGrainedReadWriteLockingDynamicConnectivity,
 }
 
-enum class LockElisionDCPConstructor(val construct: (Int) -> DynamicConnectivity) {
-    LockElisionCoarseGrainedLockingDCP(::CoarseGrainedLockingDynamicConnectivity),
-    LockElisionNBReadsCoarseGrainedLockingDCP(::NBReadsCoarseGrainedLockingDynamicConnectivity),
-    //LockElisionFineGrainedLockingDCP(::FineGrainedLockingDynamicConnectivity),
-    //LockElisionNBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),
-    LockElisionMajorDynamicConnectivity(::MajorDynamicConnectivity),
-    LockElisionMajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
+// JMH annotation processor fails when a lambda is in enum
+fun DCPConstructor.constructor(): (Int, Int) -> DynamicConnectivity = when(this) {
+    DCPConstructor.NBReadsCoarseGrainedLockingDCP -> addTrivialParameter(::NBReadsCoarseGrainedLockingDynamicConnectivity)
+    DCPConstructor.NBReadsFineGrainedLockingDynamicConnectivity -> addTrivialParameter(::NBReadsFineGrainedLockingDynamicConnectivity)
+    DCPConstructor.MajorDynamicConnectivity -> addTrivialParameter(::MajorDynamicConnectivity)
+    DCPConstructor.MajorCoarseGrainedDynamicConnectivity -> addTrivialParameter(::MajorCoarseGrainedDynamicConnectivity)
+    DCPConstructor.FCReadOptimizedDynamicConnectivity -> ::FCDynamicGraph
+    DCPConstructor.CoarseGrainedLockingDCP -> addTrivialParameter(::CoarseGrainedLockingDynamicConnectivity)
+    DCPConstructor.CoarseGrainedReadWriteLockingDCP -> addTrivialParameter(::CoarseGrainedReadWriteLockingDynamicConnectivity)
+    DCPConstructor.FineGrainedLockingDCP -> addTrivialParameter(::FineGrainedLockingDynamicConnectivity)
+    DCPConstructor.FineGrainedReadWriteLockingDynamicConnectivity -> addTrivialParameter(::FineGrainedReadWriteLockingDynamicConnectivity)
 }
 
-enum class DCPForModificationsConstructor(val construct: (Int, Int) -> DynamicConnectivity) {
-    CoarseGrainedLockingDCP(addTrivialParameter(::CoarseGrainedLockingDynamicConnectivity)),
-    FineGrainedLockingDCP(addTrivialParameter(::FineGrainedLockingDynamicConnectivity)),
-    MajorDynamicConnectivity(addTrivialParameter(::MajorDynamicConnectivity)),
-    MajorCoarseGrainedDynamicConnectivity(addTrivialParameter(::MajorCoarseGrainedDynamicConnectivity)),
-    FCReadOptimizedDynamicConnectivity(::FCDynamicGraph),
+enum class LockElisionDCPConstructor {
+    LockElisionCoarseGrainedLockingDCP(),
+    LockElisionNBReadsCoarseGrainedLockingDCP(),
+    LockElisionMajorDynamicConnectivity(),
+    LockElisionMajorCoarseGrainedDynamicConnectivity(),
 }
 
-enum class LockElisionDCPForModificationsConstructor(val construct: (Int) -> DynamicConnectivity) {
-    LockElisionCoarseGrainedLockingDCP(::CoarseGrainedLockingDynamicConnectivity),
-    LockElisionMajorDynamicConnectivity(::MajorDynamicConnectivity),
-    LockElisionMajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
+fun LockElisionDCPConstructor.constructor(): (Int) -> DynamicConnectivity = when(this) {
+    LockElisionDCPConstructor.LockElisionCoarseGrainedLockingDCP -> ::CoarseGrainedLockingDynamicConnectivity
+    LockElisionDCPConstructor.LockElisionNBReadsCoarseGrainedLockingDCP -> ::NBReadsCoarseGrainedLockingDynamicConnectivity
+    LockElisionDCPConstructor.LockElisionMajorDynamicConnectivity -> ::MajorDynamicConnectivity
+    LockElisionDCPConstructor.LockElisionMajorCoarseGrainedDynamicConnectivity -> ::MajorCoarseGrainedDynamicConnectivity
 }
+
+enum class DCPForModificationsConstructor {
+    CoarseGrainedLockingDCP(),
+    FineGrainedLockingDCP(),
+    MajorDynamicConnectivity(),
+    MajorCoarseGrainedDynamicConnectivity(),
+    FCReadOptimizedDynamicConnectivity(),
+}
+
+fun DCPForModificationsConstructor.constructor(): (Int, Int) -> DynamicConnectivity = when(this) {
+    DCPForModificationsConstructor.CoarseGrainedLockingDCP -> addTrivialParameter(::CoarseGrainedLockingDynamicConnectivity)
+    DCPForModificationsConstructor.FineGrainedLockingDCP -> addTrivialParameter(::FineGrainedLockingDynamicConnectivity)
+    DCPForModificationsConstructor.MajorDynamicConnectivity -> addTrivialParameter(::MajorDynamicConnectivity)
+    DCPForModificationsConstructor.MajorCoarseGrainedDynamicConnectivity -> addTrivialParameter(::MajorCoarseGrainedDynamicConnectivity)
+    DCPForModificationsConstructor.FCReadOptimizedDynamicConnectivity -> ::FCDynamicGraph
+}
+
+
+enum class LockElisionDCPForModificationsConstructor() {
+    LockElisionCoarseGrainedLockingDCP(),
+    LockElisionMajorCoarseGrainedDynamicConnectivity(),
+}
+
+fun LockElisionDCPForModificationsConstructor.constructor(): (Int) -> DynamicConnectivity = when(this) {
+    LockElisionDCPForModificationsConstructor.LockElisionCoarseGrainedLockingDCP -> ::CoarseGrainedLockingDynamicConnectivity
+    LockElisionDCPForModificationsConstructor.LockElisionMajorCoarseGrainedDynamicConnectivity -> ::MajorCoarseGrainedDynamicConnectivity
+}
+
 
 inline fun <T> addTrivialParameter(crossinline f: (Int) -> T): (Int, Int) -> T = { size, threads -> f(size) }

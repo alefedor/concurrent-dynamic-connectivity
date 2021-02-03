@@ -6,7 +6,6 @@ import benchmarks.util.generators.IncrementalScenarioGenerator
 import org.openjdk.jmh.annotations.*
 import java.util.concurrent.TimeUnit
 
-/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -41,16 +40,15 @@ open class CommonDynamicConnectivityIncrementalBenchmark {
     fun initializeInvocation() {
         scenarioExecutor = SuccessiveScenarioExecutor(
             scenario,
-            { size -> dcpConstructor.construct(size, workers + 1) })
+            { size -> dcpConstructor.constructor()(size, workers + 1) })
     }
 
     @Setup(Level.Iteration)
     fun flushOut() {
         println()
     }
-}*/
+}
 
-/*
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -83,11 +81,11 @@ open class LockElisionDynamicConnectivityIncrementalBenchmark {
 
     @Setup(Level.Invocation)
     fun initializeInvocation() {
-        scenarioExecutor = SuccessiveScenarioExecutor(scenario, dcpConstructor.construct)
+        scenarioExecutor = SuccessiveScenarioExecutor(scenario, dcpConstructor.constructor())
     }
 
     @Setup(Level.Iteration)
     fun flushOut() {
         println()
     }
-}*/
+}

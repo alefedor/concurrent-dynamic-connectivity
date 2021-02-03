@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import static org.jctools.util.UnsafeAccess.UNSAFE;
 import static org.jctools.util.UnsafeAccess.fieldOffset;
 
-// NOTE: this class has patched hash function, since the hash function (id % 2^i) performs really bad for our case.
+// NOTE: this class is patched, because hash functions (key % 2^i) performs badly
 
 /**
  * A lock-free alternate implementation of {@link java.util.concurrent.ConcurrentHashMap}
@@ -68,7 +68,7 @@ import static org.jctools.util.UnsafeAccess.fieldOffset;
  * <em>not</em> throw {@link ConcurrentModificationException}.  However,
  * iterators are designed to be used by only one thread at a time.
  *
- * <p> Very full tables, or tables with high reprobe rates may trigger an
+ * <p> Very full tables, or tables with high re-probe rates may trigger an
  * internal resize operation to move into a larger table.  Resizing is not
  * terribly expensive, but it is not free either; during resize operations
  * table throughput may drop somewhat.  All threads that visit the table
@@ -89,16 +89,14 @@ import static org.jctools.util.UnsafeAccess.fieldOffset;
  * @author Cliff Click
  * @param <TypeV> the type of mapped values
  */
-
 public class NonBlockingHashMapLong<TypeV>
         extends AbstractMap<Long,TypeV>
         implements ConcurrentMap<Long,TypeV>, Serializable {
 
     private static final long serialVersionUID = 1234123412341234124L;
 
-    private static final long MAGIC = 7046029254386354333L;
-
     private static final int REPROBE_LIMIT=10; // Too many reprobes then force a table-resize
+    private static final long MAGIC = 7046029254386354333L;
 
     // --- Bits to allow Unsafe access to arrays
     private static final int _Obase  = UNSAFE.arrayBaseOffset(Object[].class);
@@ -117,6 +115,7 @@ public class NonBlockingHashMapLong<TypeV>
         // - or 2^28 - or about 268M - 8-byte pointer elements.
         return _Lbase + ((long)idx * _Lscale);
     }
+    static volatile int DUMMY_VOLATILE;
 
     // --- Bits to allow Unsafe CAS'ing of the CHM field
     private static final long _chm_offset = fieldOffset(NonBlockingHashMapLong.class, "_chm");
@@ -285,12 +284,15 @@ public class NonBlockingHashMapLong<TypeV>
      * This method does nothing if the key is not in the map.
      * @return the previous value associated with <tt>key</tt>, or
      *         <tt>null</tt> if there was no mapping for <tt>key</tt>*/
-    public TypeV   remove     ( long key )            { return putIfMatch( key,TOMBSTONE,NO_MATCH_OLD);}
+    public TypeV removeIf(long key )            { return putIfMatch( key,TOMBSTONE,NO_MATCH_OLD);}
 
-    /** Atomically do a {@link #remove(long)} if-and-only-if the key is mapped
+    /** Atomically do a {@link #removeIf(long)} if-and-only-if the key is mapped
      *  to a value which is <code>equals</code> to the given value.
      *  @throws NullPointerException if the specified value is null */
-    public boolean remove     ( long key,Object val ) { return putIfMatch( key,TOMBSTONE,val ) == val ;}
+    public boolean removeIf(long key, Object val ) {
+        TypeV result = putIfMatch( key,TOMBSTONE,val );
+        return val == result || val.equals(result) ;
+    }
 
     /** Atomically do a <code>put(key,val)</code> if-and-only-if the key is
      *  mapped to some value already.
@@ -301,7 +303,8 @@ public class NonBlockingHashMapLong<TypeV>
      *  mapped a value which is <code>equals</code> to <code>oldValue</code>.
      *  @throws NullPointerException if the specified value is null */
     public boolean replace    ( long key, TypeV  oldValue, TypeV newValue ) {
-        return putIfMatch( key, newValue, oldValue ) == oldValue;
+        TypeV result = putIfMatch( key, newValue, oldValue );
+        return result == oldValue || oldValue.equals(result);
     }
 
     private TypeV putIfMatch( long key, Object newVal, Object oldVal ) {
@@ -367,10 +370,10 @@ public class NonBlockingHashMapLong<TypeV>
 
     /** Auto-boxing version of {@link #get(long)}. */
     public TypeV   get    ( Object key              ) { return (key instanceof Long) ? get    (((Long)key).longValue()) : null;  }
-    /** Auto-boxing version of {@link #remove(long)}. */
-    public TypeV   remove ( Object key              ) { return (key instanceof Long) ? remove (((Long)key).longValue()) : null;  }
-    /** Auto-boxing version of {@link #remove(long,Object)}. */
-    public boolean remove ( Object key, Object Val  ) { return (key instanceof Long) && remove(((Long) key).longValue(), Val);  }
+    /** Auto-boxing version of {@link #removeIf(long)}. */
+    public TypeV   remove ( Object key              ) { return (key instanceof Long) ? removeIf(((Long)key).longValue()) : null;  }
+    /** Auto-boxing version of {@link #removeIf(long,Object)}. */
+    public boolean remove ( Object key, Object Val  ) { return (key instanceof Long) && removeIf(((Long) key).longValue(), Val);  }
     /** Auto-boxing version of {@link #containsKey(long)}. */
     public boolean containsKey( Object key          ) { return (key instanceof Long) && containsKey(((Long) key).longValue()); }
     /** Auto-boxing version of {@link #putIfAbsent}. */
@@ -607,61 +610,78 @@ public class NonBlockingHashMapLong<TypeV>
                 idx = (idx+1)&(len-1); // Reprobe!
             } // End of spinning till we get a Key slot
 
-            // ---
-            // Found the proper Key slot, now update the matching Value slot.  We
-            // never put a null, so Value slots monotonically move from null to
-            // not-null (deleted Values use Tombstone).  Thus if 'V' is null we
-            // fail this fast cutout and fall into the check for table-full.
-            if( putval == V ) return V; // Fast cutout for no-change
+            while ( true ) {              // Spin till we insert a value
+                // ---
+                // Found the proper Key slot, now update the matching Value slot.  We
+                // never put a null, so Value slots monotonically move from null to
+                // not-null (deleted Values use Tombstone).  Thus if 'V' is null we
+                // fail this fast cutout and fall into the check for table-full.
+                if( putval == V ) return V; // Fast cutout for no-change
 
-            // See if we want to move to a new table (to avoid high average re-probe
-            // counts).  We only check on the initial set of a Value from null to
-            // not-null (i.e., once per key-insert).
-            if( (V == null && tableFull(reprobe_cnt,len)) ||
-                    // Or we found a Prime: resize is already in progress.  The resize
-                    // call below will do a CAS on _newchm forcing the read.
-                    V instanceof Prime) {
-                resize();               // Force the new table copy to start
-                return copy_slot_and_check(idx,expVal).putIfMatch(key,putval,expVal);
-            }
-
-            // ---
-            // We are finally prepared to update the existing table
-            //assert !(V instanceof Prime); // always true, so IDE warnings if uncommented
-
-            // Must match old, and we do not?  Then bail out now.  Note that either V
-            // or expVal might be TOMBSTONE.  Also V can be null, if we've never
-            // inserted a value before.  expVal can be null if we are called from
-            // copy_slot.
-
-            if( expVal != NO_MATCH_OLD && // Do we care about expected-Value at all?
-                    V != expVal &&            // No instant match already?
-                    (expVal != MATCH_ANY || V == TOMBSTONE || V == null) &&
-                    !(V==null && expVal == TOMBSTONE) &&    // Match on null/TOMBSTONE combo
-                    (expVal == null || !expVal.equals(V)) ) // Expensive equals check at the last
-                return (V==null) ? TOMBSTONE : V;         // Do not update!
-
-            // Actually change the Value in the Key,Value pair
-            if( CAS_val(idx, V, putval ) ) {
-                // CAS succeeded - we did the update!
-                // Both normal put's and table-copy calls putIfMatch, but table-copy
-                // does not (effectively) increase the number of live k/v pairs.
-                if( expVal != null ) {
-                    // Adjust sizes - a striped counter
-                    if(  (V == null || V == TOMBSTONE) && putval != TOMBSTONE ) _size.add( 1);
-                    if( !(V == null || V == TOMBSTONE) && putval == TOMBSTONE ) _size.add(-1);
+                // See if we want to move to a new table (to avoid high average re-probe
+                // counts).  We only check on the initial set of a Value from null to
+                // not-null (i.e., once per key-insert).
+                if( (V == null && tableFull(reprobe_cnt,len)) ||
+                        // Or we found a Prime: resize is already in progress.  The resize
+                        // call below will do a CAS on _newchm forcing the read.
+                        V instanceof Prime) {
+                    resize();               // Force the new table copy to start
+                    return copy_slot_and_check(idx,expVal).putIfMatch(key,putval,expVal);
                 }
-            } else {                  // Else CAS failed
+
+                // ---
+                // We are finally prepared to update the existing table
+                //assert !(V instanceof Prime); // always true, so IDE warnings if uncommented
+
+                // Must match old, and we do not?  Then bail out now.  Note that either V
+                // or expVal might be TOMBSTONE.  Also V can be null, if we've never
+                // inserted a value before.  expVal can be null if we are called from
+                // copy_slot.
+
+                if( expVal != NO_MATCH_OLD && // Do we care about expected-Value at all?
+                        V != expVal &&            // No instant match already?
+                        (expVal != MATCH_ANY || V == TOMBSTONE || V == null) &&
+                        !(V==null && expVal == TOMBSTONE) &&    // Match on null/TOMBSTONE combo
+                        (expVal == null || !expVal.equals(V)) ) // Expensive equals check at the last
+                    return (V==null) ? TOMBSTONE : V;         // Do not update!
+
+                // Actually change the Value in the Key,Value pair
+                if( CAS_val(idx, V, putval ) ) break;
+
+                // CAS failed
+                // Because we have no witness, we do not know why it failed.
+                // Indeed, by the time we look again the value under test might have flipped
+                // a thousand times and now be the expected value (despite the CAS failing).
+                // Check for the never-succeed condition of a Prime value and jump to any
+                // nested table, or else just re-run.
+
+                // We would not need this load at all if CAS returned the value on which
+                // the CAS failed (AKA witness). The new CAS semantics are supported via
+                // VarHandle in JDK9.
                 V = _vals[idx];         // Get new value
+
                 // If a Prime'd value got installed, we need to re-run the put on the
                 // new table.  Otherwise we lost the CAS to another racing put.
                 // Simply retry from the start.
                 if( V instanceof Prime )
                     return copy_slot_and_check(idx,expVal).putIfMatch(key,putval,expVal);
+
+                // Simply retry from the start.
+                // NOTE: need the fence, since otherwise '_vals[idx]' load could be hoisted
+                // out of loop.
+                int dummy = DUMMY_VOLATILE;
             }
-            // Win or lose the CAS, we are done.  If we won then we know the update
-            // happened as expected.  If we lost, it means "we won but another thread
-            // immediately stomped our update with no chance of a reader reading".
+
+            // CAS succeeded - we did the update!
+            // Both normal put's and table-copy calls putIfMatch, but table-copy
+            // does not (effectively) increase the number of live k/v pairs.
+            if( expVal != null ) {
+                // Adjust sizes - a striped counter
+                if(  (V == null || V == TOMBSTONE) && putval != TOMBSTONE ) _size.add( 1);
+                if( !(V == null || V == TOMBSTONE) && putval == TOMBSTONE ) _size.add(-1);
+            }
+
+            // We won; we know the update happened as expected.
             return (V==null && expVal!=null) ? TOMBSTONE : V;
         }
 
@@ -1159,7 +1179,7 @@ public class NonBlockingHashMapLong<TypeV>
      *  iteration.  The {@link org.jctools.maps.NonBlockingHashMap}
      *  does not normally create or using {@link java.util.Map.Entry} objects so
      *  they will be created soley to support this iteration.  Iterating using
-     *  {@link } or {@link } will be more efficient.  In addition,
+     *  {@link Map#keySet} or {@link Map#values} will be more efficient.  In addition,
      *  this version requires <strong>auto-boxing</strong> the keys.
      */
     public Set<Map.Entry<Long,TypeV>> entrySet() {

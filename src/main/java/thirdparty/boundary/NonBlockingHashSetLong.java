@@ -116,7 +116,7 @@ public class NonBlockingHashSetLong extends AbstractSet<Long> implements Seriali
      * @return <tt>true</tt> if {@code o} was removed to the set, <tt>false</tt>
      * if {@code o} was not in the set.
      */
-    public boolean remove(final long o) { return _map.remove(o) == V; }
+    public boolean remove(final long o) { return _map.removeIf(o) == V; }
 
     @Override
     public boolean remove(final Object o) { return o instanceof Long && remove(((Long) o).longValue()); }

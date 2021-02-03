@@ -1,10 +1,14 @@
-package connectivity.concurrent.general.major
+package connectivity.concurrent.general.major_coarse_grained
 
 import connectivity.*
+import connectivity.concurrent.general.major.*
+import connectivity.concurrent.general.major_coarse_grained.recalculateNonTreeEdges
+import connectivity.concurrent.general.major_coarse_grained.recalculateTreeEdges
+import connectivity.concurrent.general.major_coarse_grained.updateNonTreeEdges
 import connectivity.sequential.general.DynamicConnectivity
 import java.lang.IllegalStateException
 
-class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
+class MajorCoarseGrainedDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<MajorConcurrentEulerTourTree>
     private val states = ConcurrentEdgeMap<EdgeState>()
 
@@ -26,17 +30,15 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         if (previousState != null) {
             if (previousState.status() != INITIAL) {
                 if (previousState.status() == SPANNING_IN_PROGRESS)
-                    withLockedComponents(u, v) {}
+                    synchronize()
                 return // the edge is already present
             } else
                 initialState = previousState // help to add an edge for a concurrent addition
         }
         while (true) {
             if (!connected(u, v)) {
-                withLockedComponents(u, v) {
-                    doAddEdge(u, v, initialState)
-                    return
-                }
+                doAddEdge(u, v, initialState)
+                return
             } else {
                 if (tryNonBlockingAddEdge(u, v, initialState))
                     return
@@ -44,13 +46,19 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             val currentState = states[edge] ?: return
             if (currentState != initialState) {
                 if (currentState.status() == SPANNING_IN_PROGRESS) {
-                    withLockedComponents(u, v) {}
+                    synchronize()
                 }
                 return // someone already finished the edge addition
             }
         }
     }
 
+    @Synchronized
+    fun synchronize() {
+
+    }
+
+    @Synchronized
     fun doAddEdge(u: Int, v: Int, initialState: Int) { // under lock
         val edge = makeEdge(u, v)
         if (states[edge] ?: -1 != initialState) return
@@ -117,10 +125,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 } else {
                     if (removeEdgeOperation.replacement.value == CLOSED) {
                         // the edge is about to become spanning
-                        withLockedComponents(u, v) {
-                            doAddEdge(u, v, initialState)
-                            return true
-                        }
+                        doAddEdge(u, v, initialState)
+                        return true
                     }
                     // there is a replacement => can continue safely
                 }
@@ -142,10 +148,8 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             when (currentStatus) {
                 INITIAL -> return // no edge to remove
                 SPANNING, SPANNING_IN_PROGRESS -> {
-                    withLockedComponents(u, v) {
-                        doRemoveEdge(u, v)
-                        return
-                    }
+                    doRemoveEdge(u, v)
+                    return
                 }
                 NON_SPANNING -> {
                     if (nonSpanningRemoveEdge(u, v, currentState, edge)) return
@@ -164,6 +168,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         return false
     }
 
+    @Synchronized
     private fun doRemoveEdge(u: Int, v: Int) {
         val edge = makeEdge(u, v)
         val state = states[edge] ?: return
@@ -428,43 +433,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     }
 
     private fun root(u: Int): Node = levels[0].root(u)
-
-    private inline fun withLockedComponents(a: Int, b: Int, body: () -> Unit) {
-        var u = a
-        var v = b
-
-        while (true) {
-            var uRoot = root(u)
-            var vRoot = root(v)
-
-            // lock the component with lesser priority first to avoid deadlock
-            if (uRoot.priority > vRoot.priority) {
-                val tmp = u
-                u = v
-                v = tmp
-                val tmpNode = uRoot
-                uRoot = vRoot
-                vRoot = tmpNode
-            }
-            if (uRoot === vRoot) {
-                synchronized(uRoot) {
-                    if (uRoot == root(u) && vRoot == root(v)) {
-                        body()
-                        return
-                    }
-                }
-            } else {
-                synchronized(uRoot) {
-                    synchronized(vRoot) {
-                        if (uRoot == root(u) && vRoot == root(v)) {
-                            body()
-                            return
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     private inline fun removeInfo(uNode: Node, vNode: Node, edge: Long) {
         uNode.nonTreeEdges!!.remove(edge)

@@ -8,6 +8,7 @@ import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.OpGroupConfig
 import org.jetbrains.kotlinx.lincheck.annotations.Operation
 import org.jetbrains.kotlinx.lincheck.annotations.Param
+import org.jetbrains.kotlinx.lincheck.execution.*
 import org.jetbrains.kotlinx.lincheck.paramgen.IntGen
 import org.jetbrains.kotlinx.lincheck.strategy.managed.modelchecking.*
 import org.jetbrains.kotlinx.lincheck.strategy.stress.*
@@ -19,22 +20,24 @@ private const val n1 = 5
 private const val n2 = 7
 
 private const val actorsPerThread = 3
-private const val stressIterations = 4000
-private const val modelCheckingIterations = 20
-private const val invocations = 20000
+private const val stressIterations = 0
+private const val modelCheckingIterations = 200
+private const val invocations = 12000
 private const val threads = 3
 
-abstract class LincheckManyThreadsTest {
+abstract class LincheckManyThreadsTest(val minimizeScenario: Boolean, val executionGenerator: Class<out ExecutionGenerator>?) {
     protected abstract val dc: DynamicConnectivity
 
     @Operation
     fun addEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
-        dc.addEdge(a, b)
+        if (a != b)
+            dc.addEdge(a, b)
     }
 
     @Operation
     fun removeEdge(@Param(name = "a") a: Int, @Param(name = "a") b: Int) {
-        dc.removeEdge(a, b)
+        if (a != b)
+            dc.removeEdge(a, b)
     }
 
     @Operation
@@ -47,8 +50,9 @@ abstract class LincheckManyThreadsTest {
             actorsPerThread(actorsPerThread)
             iterations(stressIterations)
             invocationsPerIteration(invocations)
-            executionGenerator(GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
-            minimizeFailedScenario(false)
+            if (executionGenerator != null)
+                executionGenerator(executionGenerator)
+            minimizeFailedScenario(minimizeScenario)
             requireStateEquivalenceImplCheck(false)
             sequentialSpecification(DynamicConnectivitySequentialSpecification::class.java)
             threads(threads)
@@ -62,8 +66,9 @@ abstract class LincheckManyThreadsTest {
             actorsPerThread(actorsPerThread)
             iterations(modelCheckingIterations)
             invocationsPerIteration(invocations)
-            executionGenerator(GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
-            minimizeFailedScenario(false)
+            if (executionGenerator != null)
+                executionGenerator(executionGenerator)
+            minimizeFailedScenario(minimizeScenario)
             requireStateEquivalenceImplCheck(false)
             sequentialSpecification(DynamicConnectivitySequentialSpecification::class.java)
             threads(threads)
@@ -73,14 +78,25 @@ abstract class LincheckManyThreadsTest {
 }
 
 @Param(name = "a", gen = IntGen::class, conf = "0:${n1 - 1}")
-abstract class LinCheckDynamicConnectivityManyThreadsTest1(dynamicConnectivityConstructor: (Int) -> DynamicConnectivity) : LincheckManyThreadsTest() {
+abstract class LinCheckDynamicConnectivityManyThreadsTest1(
+    dynamicConnectivityConstructor: (Int) -> DynamicConnectivity,
+    minimizeScenario: Boolean,
+    executionGenerator: Class<out ExecutionGenerator>?
+) : LincheckManyThreadsTest(minimizeScenario, executionGenerator) {
     override val dc = dynamicConnectivityConstructor.invoke(n1)
 }
 
 @Param(name = "a", gen = IntGen::class, conf = "0:${n2 - 1}")
-abstract class LinCheckDynamicConnectivityManyThreadsTest2(dynamicConnectivityConstructor: (Int) -> DynamicConnectivity) : LincheckManyThreadsTest() {
+abstract class LinCheckDynamicConnectivityManyThreadsTest2(
+    dynamicConnectivityConstructor: (Int) -> DynamicConnectivity,
+    minimizeScenario: Boolean,
+    executionGenerator: Class<out ExecutionGenerator>?
+) : LincheckManyThreadsTest(minimizeScenario, executionGenerator) {
     override val dc = dynamicConnectivityConstructor(n2)
 }
 
-class MajorDCManyThreadsTest1 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity)
-class MajorDCManyThreadsTest2 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity)
+class MajorDCManyThreadsTest1 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, false, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
+class MajorDCManyThreadsTest2 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, false, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
+class MajorDCManyThreadsTest3 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, true, null)
+class MajorDCManyThreadsTest4 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, true, null)
+

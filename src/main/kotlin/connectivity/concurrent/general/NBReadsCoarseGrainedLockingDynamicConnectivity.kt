@@ -24,6 +24,7 @@ class NBReadsCoarseGrainedLockingDynamicConnectivity(private val size: Int) : Dy
     @Synchronized
     override fun addEdge(u: Int, v: Int) {
         val edge = makeEdge(u, v)
+        if (ranks[edge] != null) return
         ranks[edge] = 0
         if (!levels[0].connectedSimple(u, v, null)) {
             levels[0].addEdge(u, v)
@@ -40,7 +41,7 @@ class NBReadsCoarseGrainedLockingDynamicConnectivity(private val size: Int) : Dy
     @Synchronized
     override fun removeEdge(u: Int, v: Int) {
         val edge = makeEdge(u, v)
-        val rank = ranks[edge]!!
+        val rank = ranks[edge] ?: return
         ranks.remove(edge)
         val level = levels[rank]
 

@@ -2,13 +2,8 @@ package connectivity.concurrent.tree
 
 import connectivity.*
 import connectivity.NO_EDGE
-import connectivity.concurrent.tree.recalculateNonTreeEdges
-import connectivity.concurrent.tree.recalculateSize
-import connectivity.concurrent.tree.recalculateTreeEdges
-import connectivity.concurrent.tree.recalculateUpNonTreeEdges
 import connectivity.sequential.tree.*
 import java.util.concurrent.*
-import kotlin.random.Random
 
 class ConcurrentFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
@@ -119,8 +114,8 @@ class ConcurrentFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivit
         }
 
         // remove two directed copies of the deleted edge
-        edgeToNode.remove(uvEdge)
-        edgeToNode.remove(vuEdge)
+        edgeToNode.removeIf(uvEdge)
+        edgeToNode.removeIf(vuEdge)
 
         return Pair(component1, component2)
     }

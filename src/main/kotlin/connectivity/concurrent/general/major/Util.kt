@@ -1,16 +1,24 @@
 package connectivity.concurrent.general.major
 
+import java.util.concurrent.*
+
 typealias EdgeState = Int
 
 const val INITIAL = 0
 const val SPANNING = 1
 const val NON_SPANNING = 2
-const val REPLACEMENT = 3
-const val REMOVED = 4
+const val SPANNING_IN_PROGRESS = 3
+const val BITS_FOR_STATUS = 2
+const val BITS_FOR_ID = 15
+const val BITS_FOR_STATE = BITS_FOR_STATUS + BITS_FOR_ID
 
-const val bitsForStatus = 3
+inline fun EdgeState.status() = this and ((1 shl BITS_FOR_STATUS) - 1)
+inline fun EdgeState.rank() = this shr BITS_FOR_STATUS
 
-inline fun EdgeState.status() = this and ((1 shl bitsForStatus) - 1)
-inline fun EdgeState.rank() = this shr bitsForStatus
+inline fun makeState(status: Int, rank: Int) = status + (rank shl BITS_FOR_STATUS)
+inline fun randomBits() = ThreadLocalRandom.current().nextInt(1 shl BITS_FOR_ID)
 
-inline fun makeState(status: Int, rank: Int) = status + (rank shl bitsForStatus)
+
+inline fun pack(state: Int, edge: Long): Long = state + (edge shl BITS_FOR_STATE)
+inline fun Long.edge(): Long = this shr BITS_FOR_STATE
+inline fun Long.state(): Int = (this and ((1L shl BITS_FOR_STATE) - 1)).toInt()

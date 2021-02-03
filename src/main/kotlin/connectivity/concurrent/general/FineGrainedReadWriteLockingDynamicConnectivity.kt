@@ -4,10 +4,7 @@ import connectivity.*
 import connectivity.NO_EDGE
 import connectivity.concurrent.tree.*
 import connectivity.sequential.general.DynamicConnectivity
-import connectivity.sequential.tree.updateNonTreeEdges
 import java.util.concurrent.locks.StampedLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
     private val levels: Array<ReadWriteFineGrainedEulerTourTree>
@@ -25,6 +22,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
 
     override fun addEdge(u: Int, v: Int) = withLockedComponentsForWrite(u, v) {
         val edge = makeEdge(u, v)
+        if (ranks[edge] != null) return
         ranks[edge] = 0
         if (!levels[0].connected(u, v)) {
             levels[0].addEdge(u, v)
@@ -40,8 +38,8 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
 
     override fun removeEdge(u: Int, v: Int) = withLockedComponentsForWrite(u, v) {
         val edge = makeEdge(u, v)
-        val rank = ranks[edge]!!
-        ranks.remove(edge)
+        val rank = ranks[edge] ?: return
+        ranks.removeIf(edge)
         val level = levels[rank]
 
         val isNonTreeEdge = level.node(u).nonTreeEdges!!.contains(edge)

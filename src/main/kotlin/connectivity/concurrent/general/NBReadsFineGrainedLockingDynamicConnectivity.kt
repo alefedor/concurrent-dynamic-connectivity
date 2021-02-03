@@ -4,7 +4,6 @@ import connectivity.*
 import connectivity.NO_EDGE
 import connectivity.concurrent.tree.*
 import connectivity.sequential.general.DynamicConnectivity
-import connectivity.sequential.tree.updateNonTreeEdges
 
 
 class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : DynamicConnectivity {
@@ -22,24 +21,25 @@ class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyna
     }
 
     override fun addEdge(u: Int, v: Int) = withLockedComponents(u, v) {
-            val edge = makeEdge(u, v)
-            ranks[edge] = 0
-            if (!levels[0].connectedSimple(u, v, null)) {
-                levels[0].addEdge(u, v)
-            } else {
-                levels[0].node(u).updateNonTreeEdges {
-                    nonTreeEdges!!.add(edge)
-                }
-                levels[0].node(v).updateNonTreeEdges {
-                    nonTreeEdges!!.add(edge)
-                }
+        val edge = makeEdge(u, v)
+        if (ranks[edge] != null) return
+        ranks[edge] = 0
+        if (!levels[0].connectedSimple(u, v, null)) {
+            levels[0].addEdge(u, v)
+        } else {
+            levels[0].node(u).updateNonTreeEdges {
+                nonTreeEdges!!.add(edge)
+            }
+            levels[0].node(v).updateNonTreeEdges {
+                nonTreeEdges!!.add(edge)
             }
         }
+    }
 
     override fun removeEdge(u: Int, v: Int) = withLockedComponents(u, v) {
             val edge = makeEdge(u, v)
             val rank = ranks[edge]!!
-            ranks.remove(edge)
+            ranks.removeIf(edge)
             val level = levels[rank]
 
             val isNonTreeEdge = level.node(u).nonTreeEdges!!.contains(edge)

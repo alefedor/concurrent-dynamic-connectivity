@@ -108,8 +108,8 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         }
 
         // remove two directed copies of the deleted edge
-        edgeToNode.remove(uvEdge)
-        edgeToNode.remove(vuEdge)
+        edgeToNode.removeIf(uvEdge)
+        edgeToNode.removeIf(vuEdge)
 
         return Pair(component1, component2)
     }

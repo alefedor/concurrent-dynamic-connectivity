@@ -13,8 +13,8 @@ private const val nodesPerComponent = 70
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = iterations, time = 1, timeUnit = TimeUnit.SECONDS)
-@Warmup(iterations = warmupIterations, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = warmupIterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 open class CommonDynamicConnectivityTwoLevelBenchmark {
     lateinit var scenario: Scenario
     lateinit var scenarioExecutor: ScenarioExecutor
@@ -43,7 +43,7 @@ open class CommonDynamicConnectivityTwoLevelBenchmark {
             { size -> dcpConstructor.construct(size, workers + 1) })
     }
 
-    @Setup(Level.Invocation)
+    @Setup(Level.Iteration)
     fun flushOut() {
         println()
     }
@@ -52,8 +52,8 @@ open class CommonDynamicConnectivityTwoLevelBenchmark {
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = iterations, time = 1, timeUnit = TimeUnit.SECONDS)
-@Warmup(iterations = warmupIterations, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = warmupIterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 open class LockElisionDynamicConnectivityTwoLevelBenchmark {
     lateinit var scenario: Scenario
     lateinit var scenarioExecutor: ScenarioExecutor
@@ -81,7 +81,7 @@ open class LockElisionDynamicConnectivityTwoLevelBenchmark {
         scenarioExecutor = ScenarioExecutor(scenario, dcpConstructor.construct)
     }
 
-    @Setup(Level.Invocation)
+    @Setup(Level.Iteration)
     fun flushOut() {
         println()
     }

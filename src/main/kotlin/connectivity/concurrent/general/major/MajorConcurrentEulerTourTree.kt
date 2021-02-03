@@ -4,29 +4,31 @@ import com.google.common.collect.ConcurrentHashMultiset
 import connectivity.ConcurrentEdgeMap
 import connectivity.Edge
 import connectivity.NO_EDGE
-import connectivity.concurrent.general.major.recalculateNonTreeEdges
-import connectivity.concurrent.general.major.recalculateSize
-import connectivity.concurrent.general.major.recalculateTreeEdges
-import connectivity.concurrent.general.major.recalculateUpNonTreeEdges
 import connectivity.makeDirectedEdge
 import connectivity.sequential.tree.*
 import java.util.concurrent.*
 import kotlin.random.Random
 
 class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
-    @Volatile
+    @Volatile @JvmField
     var parent: Node? = null
+    @JvmField
     var left: Node? = null
+    @JvmField
     var right: Node? = null
+    @JvmField
     var size: Int = 1
+    @JvmField
     val nonTreeEdges: ConcurrentHashMultiset<Edge>? = if (isVertex) ConcurrentHashMultiset.create<Edge>() else null // for storing non-tree edges in general case
-    @Volatile
+    @Volatile @JvmField
     var hasNonTreeEdges: Boolean = false // for traversal
+    @JvmField
     var currentLevelTreeEdge: Edge = treeEdge
+    @JvmField
     var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
-    @Volatile
+    @Volatile @JvmField
     var version = 0
-    @Volatile
+    @Volatile @JvmField
     var removeEdgeOperation: RemovalOperationInfo? = null
 }
 
@@ -125,8 +127,8 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
         }
 
         // remove two directed copies of the deleted edge
-        edgeToNode.remove(uvEdge)
-        edgeToNode.remove(vuEdge)
+        edgeToNode.removeIf(uvEdge)
+        edgeToNode.removeIf(vuEdge)
 
         return Pair(component1, component2)
     }
@@ -255,7 +257,7 @@ internal inline fun Node.recalculateSize() {
 }
 
 internal inline fun Node.recalculateTreeEdges() {
-    hasCurrentLevelTreeEdges = currentLevelTreeEdge != connectivity.NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
+    hasCurrentLevelTreeEdges = currentLevelTreeEdge != NO_EDGE || (left?.hasCurrentLevelTreeEdges ?: false) || (right?.hasCurrentLevelTreeEdges ?: false)
 }
 
 internal inline fun Node.recalculateNonTreeEdges() {
@@ -277,8 +279,7 @@ internal fun Node.recalculateUpNonTreeEdges() {
     }
 }
 
-internal inline fun Node.updateNonTreeEdges(isAdd: Boolean, body: Node.() -> Unit) {
+internal inline fun Node.updateNonTreeEdges(body: Node.() -> Unit) {
     body()
-    if (isAdd)
-        recalculateUpNonTreeEdges()
+    recalculateUpNonTreeEdges()
 }

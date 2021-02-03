@@ -21,6 +21,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
 
     override fun addEdge(u: Int, v: Int) = withLockedComponents(u, v) {
         val edge = makeEdge(u, v)
+        if (ranks[edge] != null) return
         ranks[edge] = 0
         if (!levels[0].connected(u, v)) {
             levels[0].addEdge(u, v)
@@ -36,8 +37,8 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
 
     override fun removeEdge(u: Int, v: Int) = withLockedComponents(u, v) {
         val edge = makeEdge(u, v)
-        val rank = ranks[edge]!!
-        ranks.remove(edge)
+        val rank = ranks[edge] ?: return
+        ranks.removeIf(edge)
         val level = levels[rank]
 
         val isNonTreeEdge = level.node(u).nonTreeEdges!!.contains(edge)

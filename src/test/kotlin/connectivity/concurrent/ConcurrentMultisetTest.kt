@@ -32,6 +32,7 @@ class ConcurrentMultisetTest {
         val options = ModelCheckingOptions().apply {
             threads(3)
             actorsPerThread(3)
+            iterations(300)
             minimizeFailedScenario(false)
             requireStateEquivalenceImplCheck(false)
         }

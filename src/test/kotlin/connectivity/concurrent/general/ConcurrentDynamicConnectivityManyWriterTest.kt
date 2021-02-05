@@ -22,7 +22,7 @@ private const val n2 = 7
 private const val actorsPerThread = 3
 private const val stressIterations = 0
 private const val modelCheckingIterations = 200
-private const val invocations = 12000
+private const val invocations = 13000
 private const val threads = 3
 
 abstract class LincheckManyThreadsTest(val minimizeScenario: Boolean, val executionGenerator: Class<out ExecutionGenerator>?) {

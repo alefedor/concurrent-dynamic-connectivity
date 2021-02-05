@@ -284,7 +284,6 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 val edgeState = states[edge] ?: continue // skip already deleted edges
                 if (edgeState.rank() != rank) continue // check that rank is correct
                 val status = edgeState.status()
-                if (status == SPANNING) throw IllegalStateException("A spanning edge was not fully deleted from non-spanning sets")
                 if (status != NON_SPANNING) continue // skip any non-spanning edges
                 if (!levels[rank].connectedSimple(edge.u(), edge.v(), additionalRoot)) {
                     // is a replacement
@@ -357,8 +356,10 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                                 // can be a replacement
                                 val edgeWithState = pack(edgeState, edge)
                                 if (proposeReplacement(currentOperationInfo, edgeWithState)) {
-                                    if (states.replace(edge, edgeState, makeState(SPANNING, 0)))
+                                    if (states.replace(edge, edgeState, makeState(SPANNING, 0))) {
+                                        foundReplacement = true
                                         break
+                                    }
                                 }
                             }
 

@@ -2,7 +2,6 @@ package connectivity.concurrent.general.major
 
 import connectivity.*
 import connectivity.sequential.general.DynamicConnectivity
-import java.lang.IllegalStateException
 
 class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
     private val levels: Array<MajorConcurrentEulerTourTree>
@@ -38,7 +37,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     return
                 }
             } else {
-                if (tryNonBlockingAddEdge(u, v, initialState))
+                if (tryAddNonSpanningEdge(u, v, initialState))
                     return
             }
             val currentState = states[edge] ?: return
@@ -94,7 +93,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         }
     }
 
-    fun tryNonBlockingAddEdge(u: Int, v: Int, initialState: Int): Boolean {
+    fun tryAddNonSpanningEdge(u: Int, v: Int, initialState: Int): Boolean {
         val edge = makeEdge(u, v)
         val level = levels[0]
         val uNode = level.node(u)
@@ -116,6 +115,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     return true
                 } else {
                     if (removeEdgeOperation.replacement.value == CLOSED) {
+                        removeInfo(uNode, vNode, edge)
                         // the edge is about to become spanning
                         withLockedComponents(u, v) {
                             doAddEdge(u, v, initialState)
@@ -148,13 +148,13 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                     }
                 }
                 NON_SPANNING -> {
-                    if (nonSpanningRemoveEdge(u, v, currentState, edge)) return
+                    if (tryRemoveNonSpanningEdge(u, v, currentState, edge)) return
                 }
             }
         }
     }
 
-    private fun nonSpanningRemoveEdge(u: Int, v: Int, currentState: Int, edge: Long): Boolean {
+    private fun tryRemoveNonSpanningEdge(u: Int, v: Int, currentState: Int, edge: Long): Boolean {
         // currentState.status() should be NON_SPANNING
         val currentRank = currentState.rank()
         if (states.removeIf(edge, currentState)) {
@@ -169,7 +169,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         val state = states[edge] ?: return
         if (state.status() == INITIAL) return
         if (state.status() == NON_SPANNING) {
-            nonSpanningRemoveEdge(u, v, state, edge)
+            tryRemoveNonSpanningEdge(u, v, state, edge)
             return
         }
         val rank = state.rank()

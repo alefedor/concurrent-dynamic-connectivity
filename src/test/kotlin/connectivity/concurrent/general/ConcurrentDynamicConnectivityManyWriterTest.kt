@@ -43,15 +43,6 @@ abstract class LincheckManyThreadsTest(val minimizeScenario: Boolean, val execut
     @Operation
     fun connected(@Param(name = "a") a: Int, @Param(name = "a") b: Int) = dc.connected(a, b)
 
-
-    @StateRepresentation
-    fun stateRepresentation(): String {
-        return (dc as MajorDynamicConnectivity).states
-            .mapValues { "(s:${ it.value.status() },r:${it.value.rank()})" }
-            .mapKeys { "(${it.key.u()},${it.key.v()})" }
-            .toString()
-    }
-
     @Test
     fun stress() {
         val options = StressOptions().apply {

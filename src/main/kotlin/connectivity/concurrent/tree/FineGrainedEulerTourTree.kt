@@ -65,8 +65,8 @@ class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
-        edgeToNode[uvEdge] = uvNode
-        edgeToNode[vuEdge] = vuNode
+        edgeToNode.put(uvEdge, uvNode)
+        edgeToNode.put(vuEdge, vuNode)
 
         // merge (u,v), (v,u) edges and tours
         merge(merge(uRoot, uvNode), merge(vRoot, vuNode))

@@ -26,7 +26,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import static org.jctools.util.UnsafeAccess.UNSAFE;
 import static org.jctools.util.UnsafeAccess.fieldOffset;
 
-// NOTE: this class is patched, because hash functions (key % 2^i) performs badly
+// NOTE: this class is patched.
+// hash function (key % 2*i) replaced with (key * MAGIC % 2^i), because the previous was awful for our case.
+// remove boxed methods, because kotlin for some reason choosed them
 
 /**
  * A lock-free alternate implementation of {@link java.util.concurrent.ConcurrentHashMap}
@@ -89,9 +91,7 @@ import static org.jctools.util.UnsafeAccess.fieldOffset;
  * @author Cliff Click
  * @param <TypeV> the type of mapped values
  */
-public class NonBlockingHashMapLong<TypeV>
-        extends AbstractMap<Long,TypeV>
-        implements ConcurrentMap<Long,TypeV>, Serializable {
+public class NonBlockingHashMapLong<TypeV> {
 
     private static final long serialVersionUID = 1234123412341234124L;
 
@@ -366,25 +366,6 @@ public class NonBlockingHashMapLong<TypeV>
         assert !(V instanceof Prime); // Never return a Prime
         assert V != TOMBSTONE;
         return (TypeV)V;
-    }
-
-    /** Auto-boxing version of {@link #get(long)}. */
-    public TypeV   get    ( Object key              ) { return (key instanceof Long) ? get    (((Long)key).longValue()) : null;  }
-    /** Auto-boxing version of {@link #removeIf(long)}. */
-    public TypeV   remove ( Object key              ) { return (key instanceof Long) ? removeIf(((Long)key).longValue()) : null;  }
-    /** Auto-boxing version of {@link #removeIf(long,Object)}. */
-    public boolean remove ( Object key, Object Val  ) { return (key instanceof Long) && removeIf(((Long) key).longValue(), Val);  }
-    /** Auto-boxing version of {@link #containsKey(long)}. */
-    public boolean containsKey( Object key          ) { return (key instanceof Long) && containsKey(((Long) key).longValue()); }
-    /** Auto-boxing version of {@link #putIfAbsent}. */
-    public TypeV   putIfAbsent( Long key, TypeV val ) { return putIfAbsent( key.longValue(), val ); }
-    /** Auto-boxing version of {@link #replace}. */
-    public TypeV   replace( Long key, TypeV Val     ) { return replace(key.longValue(), Val);  }
-    /** Auto-boxing version of {@link #put}. */
-    public TypeV   put    ( Long key, TypeV val     ) { return put(key.longValue(),val); }
-    /** Auto-boxing version of {@link #replace}. */
-    public boolean replace( Long key, TypeV oldValue, TypeV newValue ) {
-        return replace(key.longValue(), oldValue, newValue);
     }
 
     // --- help_copy -----------------------------------------------------------
@@ -1101,45 +1082,6 @@ public class NonBlockingHashMapLong<TypeV>
         /** True if there are more keys to iterate over. */
         public boolean hasMoreElements() { return hasNext(); }
     }
-    /** Returns an enumeration of the <strong>auto-boxed</strong> keys in this table.
-     *  <strong>Warning:</strong> this version will auto-box all returned keys.
-     *  @return an enumeration of the auto-boxed keys in this table
-     *  @see #keySet()  */
-    public Enumeration<Long> keys() { return new IteratorLong(); }
-
-    /** Returns a {@link Set} view of the keys contained in this map; with care
-     *  the keys may be iterated over <strong>without auto-boxing</strong>.  The
-     *  set is backed by the map, so changes to the map are reflected in the
-     *  set, and vice-versa.  The set supports element removal, which removes
-     *  the corresponding mapping from this map, via the
-     *  <tt>Iterator.remove</tt>, <tt>Set.remove</tt>, <tt>removeAll</tt>,
-     *  <tt>retainAll</tt>, and <tt>clear</tt> operations.  It does not support
-     *  the <tt>add</tt> or <tt>addAll</tt> operations.
-     *
-     *  <p>The view's <tt>iterator</tt> is a "weakly consistent" iterator that
-     *  will never throw {@link ConcurrentModificationException}, and guarantees
-     *  to traverse elements as they existed upon construction of the iterator,
-     *  and may (but is not guaranteed to) reflect any modifications subsequent
-     *  to construction.  */
-    public Set<Long> keySet() {
-        return new AbstractSet<Long> () {
-            public void    clear   (          ) {        NonBlockingHashMapLong.this.clear   ( ); }
-            public int     size    (          ) { return NonBlockingHashMapLong.this.size    ( ); }
-            public boolean contains( Object k ) { return NonBlockingHashMapLong.this.containsKey(k); }
-            public boolean remove  ( Object k ) { return NonBlockingHashMapLong.this.remove  (k) != null; }
-            public IteratorLong iterator()    { return new IteratorLong(); }
-        };
-    }
-
-    /** Keys as a long array.  Array may be zero-padded if keys are concurrently deleted. */
-    public long[] keySetLong() {
-        long[] dom = new long[size()];
-        IteratorLong i=(IteratorLong)keySet().iterator();
-        int j=0;
-        while( j < dom.length && i.hasNext() )
-            dom[j++] = i.nextLong();
-        return dom;
-    }
 
     // --- entrySet ------------------------------------------------------------
     // Warning: Each call to 'next' in this iterator constructs a new Long and a
@@ -1159,72 +1101,4 @@ public class NonBlockingHashMapLong<TypeV>
         public Map.Entry<Long,TypeV> next() { _ss.next(); return new NBHMLEntry(_ss._prevK,_ss._prevV); }
         public boolean hasNext() { return _ss.hasNext(); }
     }
-
-    /** Returns a {@link Set} view of the mappings contained in this map.  The
-     *  set is backed by the map, so changes to the map are reflected in the
-     *  set, and vice-versa.  The set supports element removal, which removes
-     *  the corresponding mapping from the map, via the
-     *  <tt>Iterator.remove</tt>, <tt>Set.remove</tt>, <tt>removeAll</tt>,
-     *  <tt>retainAll</tt>, and <tt>clear</tt> operations.  It does not support
-     *  the <tt>add</tt> or <tt>addAll</tt> operations.
-     *
-     *  <p>The view's <tt>iterator</tt> is a "weakly consistent" iterator
-     *  that will never throw {@link ConcurrentModificationException},
-     *  and guarantees to traverse elements as they existed upon
-     *  construction of the iterator, and may (but is not guaranteed to)
-     *  reflect any modifications subsequent to construction.
-     *
-     *  <p><strong>Warning:</strong> the iterator associated with this Set
-     *  requires the creation of {@link java.util.Map.Entry} objects with each
-     *  iteration.  The {@link org.jctools.maps.NonBlockingHashMap}
-     *  does not normally create or using {@link java.util.Map.Entry} objects so
-     *  they will be created soley to support this iteration.  Iterating using
-     *  {@link Map#keySet} or {@link Map#values} will be more efficient.  In addition,
-     *  this version requires <strong>auto-boxing</strong> the keys.
-     */
-    public Set<Map.Entry<Long,TypeV>> entrySet() {
-        return new AbstractSet<Map.Entry<Long,TypeV>>() {
-            public void    clear   (          ) {        NonBlockingHashMapLong.this.clear( ); }
-            public int     size    (          ) { return NonBlockingHashMapLong.this.size ( ); }
-            public boolean remove( final Object o ) {
-                if (!(o instanceof Map.Entry)) return false;
-                final Map.Entry<?,?> e = (Map.Entry<?,?>)o;
-                return NonBlockingHashMapLong.this.remove(e.getKey(), e.getValue());
-            }
-            public boolean contains(final Object o) {
-                if (!(o instanceof Map.Entry)) return false;
-                final Map.Entry<?,?> e = (Map.Entry<?,?>)o;
-                TypeV v = get(e.getKey());
-                return v != null && v.equals(e.getValue());
-            }
-            public Iterator<Map.Entry<Long,TypeV>> iterator() { return new SnapshotE(); }
-        };
-    }
-
-    // --- writeObject -------------------------------------------------------
-    // Write a NBHML to a stream
-    private void writeObject(java.io.ObjectOutputStream s) throws IOException  {
-        s.defaultWriteObject();     // Write nothing
-        for( long K : keySet() ) {
-            final Object V = get(K);  // Do an official 'get'
-            s.writeLong  (K);         // Write the <long,TypeV> pair
-            s.writeObject(V);
-        }
-        s.writeLong(NO_KEY);        // Sentinel to indicate end-of-data
-        s.writeObject(null);
-    }
-
-    // --- readObject --------------------------------------------------------
-    // Read a CHM from a stream
-    private void readObject(java.io.ObjectInputStream s) throws IOException, ClassNotFoundException  {
-        s.defaultReadObject();      // Read nothing
-        initialize(MIN_SIZE);
-        for (;;) {
-            final long K = s.readLong();
-            final TypeV V = (TypeV) s.readObject();
-            if( K == NO_KEY && V == null ) break;
-            put(K,V);               // Insert with an offical put
-        }
-    }
-
 }  // End NonBlockingHashMapLong class

@@ -13,10 +13,18 @@ import org.junit.Test
 
 private const val n = 7
 
-@StressCTest(actorsAfter = 5, actorsBefore = 5, actorsPerThread = 7, iterations = 1000, generator = TreeDynamicConnectivitySingleWriterExecutionGenerator::class, minimizeFailedScenario = false)
+@StressCTest(
+    actorsAfter = 5,
+    actorsBefore = 5,
+    actorsPerThread = 7,
+    iterations = 1000,
+    generator = TreeDynamicConnectivitySingleWriterExecutionGenerator::class,
+    minimizeFailedScenario = false,
+    requireStateEquivalenceImplCheck = false
+)
 @Param(name = "a", gen = IntGen::class, conf = "0:${n - 1}")
 @OpGroupConfig(name = "writer", nonParallel = true)
-class ConcurrentEulerTourTreeStressTest : VerifierState() {
+class ConcurrentEulerTourTreeStressTest {
     private val dc = MajorConcurrentEulerTourTree(n)
 
     @Operation(group = "writer")
@@ -36,6 +44,4 @@ class ConcurrentEulerTourTreeStressTest : VerifierState() {
     fun test() {
         LinChecker.check(this::class.java)
     }
-
-    override fun extractState() = dc.state()
 }

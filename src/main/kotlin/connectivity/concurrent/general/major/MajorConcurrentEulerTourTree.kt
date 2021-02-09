@@ -83,8 +83,8 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
             false,
             if (isCurrentLevelTreeEdge && v < u) vuEdge else NO_EDGE
         )
-        edgeToNode[uvEdge] = uvNode
-        edgeToNode[vuEdge] = vuNode
+        edgeToNode.put(uvEdge, uvNode)
+        edgeToNode.put(vuEdge, vuNode)
 
         // merge (u,v), (v,u) edges and tours
         merge(merge(uRoot, uvNode), merge(vRoot, vuNode))
@@ -159,8 +159,6 @@ class MajorConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
 
         return uRoot === vRoot
     }
-
-    fun state() = Pair(edgeToNode.keys, edgeToNode.values.map { it.priority }) // the tree is determined by (value, priority) pairs
 
     private inline fun rereadRoot(v: Int, wasRoot: Node, wasVersion: Int): Boolean {
         val root = root(v)

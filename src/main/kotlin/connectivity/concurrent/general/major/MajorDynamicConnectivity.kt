@@ -31,7 +31,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 initialState = previousState // help to add an edge for a concurrent addition
         }
         while (true) {
-            if (!connected(u, v)) {
+            if (!levels[0].connectedSimple(u, v)) {
                 withLockedComponents(u, v) {
                     doAddEdge(u, v, initialState)
                     return
@@ -54,9 +54,9 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         val edge = makeEdge(u, v)
         if (states[edge] ?: -1 != initialState) return
         if (!levels[0].connectedSimple(u, v)) {
-            states[edge] = makeState(SPANNING_IN_PROGRESS, 0)
+            states.put(edge, makeState(SPANNING_IN_PROGRESS, 0))
             levels[0].addEdge(u, v)
-            states[edge] = makeState(SPANNING, 0)
+            states.put(edge, makeState(SPANNING, 0))
         } else {
             val uNode = levels[0].node(u)
             val vNode = levels[0].node(v)
@@ -256,7 +256,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             node.currentLevelTreeEdge = NO_EDGE
             levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
             // state should be (SPANNING, rank) here
-            states[treeEdge] = makeState(SPANNING, rank + 1)
+            states.put(treeEdge, makeState(SPANNING, rank + 1))
         }
 
         // recursive call for children

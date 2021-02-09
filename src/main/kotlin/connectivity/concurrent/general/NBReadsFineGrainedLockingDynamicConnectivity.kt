@@ -23,7 +23,7 @@ class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyna
     override fun addEdge(u: Int, v: Int) = withLockedComponents(u, v) {
         val edge = makeEdge(u, v)
         if (ranks[edge] != null) return
-        ranks[edge] = 0
+        ranks.put(edge, 0)
         if (!levels[0].connectedSimple(u, v, null)) {
             levels[0].addEdge(u, v)
         } else {
@@ -100,7 +100,7 @@ class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyna
         if (treeEdge != NO_EDGE) {
             node.currentLevelTreeEdge = NO_EDGE
             levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
-            ranks[treeEdge] = rank + 1
+            ranks.put(treeEdge, rank + 1)
         }
 
         // recursive call for children
@@ -150,7 +150,7 @@ class NBReadsFineGrainedLockingDynamicConnectivity(private val size: Int) : Dyna
                     levels[rank + 1].node(edge.v()).updateNonTreeEdges {
                         nonTreeEdges!!.add(edge)
                     }
-                    ranks[edge] = rank + 1
+                    ranks.put(edge, rank + 1)
                 }
             }
         }

@@ -22,7 +22,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
     override fun addEdge(u: Int, v: Int) = withLockedComponents(u, v) {
         val edge = makeEdge(u, v)
         if (ranks[edge] != null) return
-        ranks[edge] = 0
+        ranks.put(edge, 0)
         if (!levels[0].connected(u, v)) {
             levels[0].addEdge(u, v)
         } else {
@@ -99,7 +99,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
         if (treeEdge != NO_EDGE) {
             node.currentLevelTreeEdge = NO_EDGE
             levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
-            ranks[treeEdge] = rank + 1
+            ranks.put(treeEdge, rank + 1)
         }
 
         // recursive call for children
@@ -150,7 +150,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
                     levels[rank + 1].node(edge.v()).updateNonTreeEdges {
                         nonTreeEdges!!.add(edge)
                     }
-                    ranks[edge] = rank + 1
+                    ranks.putIfAbsent(edge, rank + 1)
                 }
             }
         }

@@ -26,7 +26,7 @@ fun main() {
         .jvmArgs("-Xmx50g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("random_dcp_results.csv")
+        .result("random_dcp_results_fix.csv")
         .build()
     Runner(dcpOptions).run()
 
@@ -35,7 +35,7 @@ fun main() {
         .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("random_dcp_lock_elision_results.csv")
+        .result("random_dcp_lock_elision_results_fix.csv")
         .build()
     Runner(lockElisionDcpOptions).run()
 
@@ -45,7 +45,7 @@ fun main() {
         .jvmArgs("-Xmx50g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("incremental_dcp_results.csv")
+        .result("incremental_dcp_results_fix.csv")
         .build()
     Runner(incrementalDcpOptions).run()
 
@@ -54,7 +54,7 @@ fun main() {
         .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("incremental_dcp_lock_elision_results.csv")
+        .result("incremental_dcp_lock_elision_results_fix.csv")
         .build()
     Runner(incrementalLockElisionDcpOptions).run()
 
@@ -64,7 +64,7 @@ fun main() {
         .jvmArgs("-Xmx50g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("decremental_dcp_results.csv")
+        .result("decremental_dcp_results_fix.csv")
         .build()
     Runner(decrementalDcpOptions).run()
 
@@ -73,7 +73,7 @@ fun main() {
         .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("decremental_dcp_lock_elision_results.csv")
+        .result("decremental_dcp_lock_elision_results_fix.csv")
         .build()
     Runner(decrementalLockElisionDcpOptions).run()
 
@@ -83,7 +83,7 @@ fun main() {
         .jvmArgs("-Xmx50g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("two_level_dcp_results.csv")
+        .result("two_level_dcp_results_fix.csv")
         .build()
     Runner(twoLevelDcpOptions).run()
 
@@ -92,7 +92,7 @@ fun main() {
         .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms5g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
-        .result("two_level_dcp_lock_elision_results.csv")
+        .result("two_level_dcp_lock_elision_results_fix.csv")
         .build()
     Runner(twoLevelLockElisionDcpOptions).run()
 }

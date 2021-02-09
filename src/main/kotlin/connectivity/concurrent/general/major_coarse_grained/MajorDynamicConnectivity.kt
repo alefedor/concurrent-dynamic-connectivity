@@ -36,7 +36,7 @@ class MajorCoarseGrainedDynamicConnectivity(private val size: Int) : DynamicConn
                 initialState = previousState // help to add an edge for a concurrent addition
         }
         while (true) {
-            if (!connected(u, v)) {
+            if (!levels[0].connectedSimple(u, v)) {
                 doAddEdge(u, v, initialState)
                 return
             } else {
@@ -63,9 +63,9 @@ class MajorCoarseGrainedDynamicConnectivity(private val size: Int) : DynamicConn
         val edge = makeEdge(u, v)
         if (states[edge] ?: -1 != initialState) return
         if (!levels[0].connectedSimple(u, v)) {
-            states[edge] = makeState(SPANNING_IN_PROGRESS, 0)
+            states.put(edge, makeState(SPANNING_IN_PROGRESS, 0))
             levels[0].addEdge(u, v)
-            states[edge] = makeState(SPANNING, 0)
+            states.put(edge, makeState(SPANNING, 0))
         } else {
             val uNode = levels[0].node(u)
             val vNode = levels[0].node(v)
@@ -161,7 +161,7 @@ class MajorCoarseGrainedDynamicConnectivity(private val size: Int) : DynamicConn
     private fun nonSpanningRemoveEdge(u: Int, v: Int, currentState: Int, edge: Long): Boolean {
         // currentState.status() should be NON_SPANNING
         val currentRank = currentState.rank()
-        if (states.remove(edge, currentState)) {
+        if (states.removeIf(edge, currentState)) {
             removeInfo(levels[currentRank].node(u), levels[currentRank].node(v), edge)
             return true
         }
@@ -249,7 +249,7 @@ class MajorCoarseGrainedDynamicConnectivity(private val size: Int) : DynamicConn
                 }
             }
         }
-        states.remove(edge)
+        states.removeIf(edge)
     }
 
     override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
@@ -262,7 +262,7 @@ class MajorCoarseGrainedDynamicConnectivity(private val size: Int) : DynamicConn
             node.currentLevelTreeEdge = NO_EDGE
             levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
             // state should be (SPANNING, rank) here
-            states[treeEdge] = makeState(SPANNING, rank + 1)
+            states.put(treeEdge, makeState(SPANNING, rank + 1))
         }
 
         // recursive call for children

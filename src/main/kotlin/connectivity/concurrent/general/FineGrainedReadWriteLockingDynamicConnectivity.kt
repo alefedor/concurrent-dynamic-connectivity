@@ -83,8 +83,7 @@ class FineGrainedReadWriteLockingDynamicConnectivity(size: Int) : DynamicConnect
                 break
             } else {
                 // linearization point, do an actual split on this level
-                uRoot.parent = null
-                vRoot.parent = null
+                lowerRoot.parent = null
             }
         }
     }

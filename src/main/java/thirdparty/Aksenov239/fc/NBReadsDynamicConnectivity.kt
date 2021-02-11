@@ -1,13 +1,12 @@
-package connectivity.concurrent.general
+package thirdparty.Aksenov239.fc
 
 import connectivity.*
-import connectivity.NO_EDGE
 import connectivity.concurrent.tree.*
-import connectivity.sequential.general.DynamicConnectivity
+import connectivity.sequential.general.*
 
-class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
-    private val levels: Array<FineGrainedEulerTourTree>
-    private val ranks = ConcurrentEdgeMap<Int>()
+class NBReadsDynamicConnectivity(private val size: Int) : DynamicConnectivity {
+    private val levels: Array<ConcurrentEulerTourTree>
+    private val ranks = SequentialEdgeMap<Int>()
 
     init {
         var levelNumber = 1
@@ -16,14 +15,14 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
             levelNumber++
             maxSize *= 2
         }
-        levels = Array(levelNumber) { FineGrainedEulerTourTree(size) }
+        levels = Array(levelNumber) { ConcurrentEulerTourTree(size) }
     }
 
-    override fun addEdge(u: Int, v: Int) = withLockedComponents(u, v) {
+    override fun addEdge(u: Int, v: Int) {
         val edge = makeEdge(u, v)
         if (ranks[edge] != null) return
-        ranks.put(edge, 0)
-        if (!levels[0].connected(u, v)) {
+        ranks[edge] = 0
+        if (!levels[0].connectedSimple(u, v, null)) {
             levels[0].addEdge(u, v)
         } else {
             levels[0].node(u).updateNonTreeEdges {
@@ -35,10 +34,10 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
         }
     }
 
-    override fun removeEdge(u: Int, v: Int) = withLockedComponents(u, v) {
+    override fun removeEdge(u: Int, v: Int) {
         val edge = makeEdge(u, v)
         val rank = ranks[edge] ?: return
-        ranks.removeIf(edge)
+        ranks.remove(edge)
         val level = levels[rank]
 
         val isNonTreeEdge = level.node(u).nonTreeEdges!!.contains(edge)
@@ -82,23 +81,24 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
                 break
             } else {
                 // linearization point, do an actual split on this level
-                lowerRoot.parent = null
+                uRoot.version.inc()
+                vRoot.version.inc()
+                uRoot.parent = null
+                vRoot.parent = null
             }
         }
     }
 
-    override fun connected(u: Int, v: Int): Boolean = withLockedComponents(u, v) {
-        levels[0].connected(u, v)
-    }
+    override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
 
-    private fun increaseTreeEdgesRank(node: FineGrainedETTNode, u: Int, v: Int, rank: Int) {
+    private fun increaseTreeEdgesRank(node: ConcurrentETTNode, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
 
         val treeEdge = node.currentLevelTreeEdge
         if (treeEdge != NO_EDGE) {
             node.currentLevelTreeEdge = NO_EDGE
             levels[rank + 1].addEdge(treeEdge.u(), treeEdge.v())
-            ranks.put(treeEdge, rank + 1)
+            ranks[treeEdge] = rank + 1
         }
 
         // recursive call for children
@@ -108,12 +108,11 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
         node.right?.let {
             increaseTreeEdgesRank(it, u, v, rank)
         }
-
         // recalculate flags after updates
         node.recalculateTreeEdges()
     }
 
-    private fun findReplacement(node: FineGrainedETTNode, rank: Int, additionalRoot: FineGrainedETTNode): Edge {
+    private fun findReplacement(node: ConcurrentETTNode, rank: Int, additionalRoot: ConcurrentETTNode): Edge {
         if (!node.hasNonTreeEdges) return NO_EDGE
 
         var result: Edge = NO_EDGE
@@ -137,7 +136,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
                     }
                 iterator.remove()
 
-                if (!level.connected(edge.u(), edge.v(), additionalRoot)) {
+                if (!level.connectedSimple(edge.u(), edge.v(), additionalRoot)) {
                     // is a replacement
                     result = edge
                     break
@@ -149,7 +148,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
                     levels[rank + 1].node(edge.v()).updateNonTreeEdges {
                         nonTreeEdges!!.add(edge)
                     }
-                    ranks.putIfAbsent(edge, rank + 1)
+                    ranks[edge] = rank + 1
                 }
             }
         }
@@ -167,34 +166,5 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
         // recalculate flags after updates
         node.recalculateNonTreeEdges()
         return result
-    }
-
-    fun root(u: Int): FineGrainedETTNode = levels[0].root(u)
-
-    private inline fun <R> withLockedComponents(a: Int, b: Int, action: () -> R): R {
-        var u = a
-        var v = b
-
-        while (true) {
-            var uRoot = root(u)
-            var vRoot = root(v)
-
-            // lock the component with lesser priority first to avoid deadlock
-            if (uRoot.priority > vRoot.priority) {
-                val tmp = u
-                u = v
-                v = tmp
-                val tmpNode = uRoot
-                uRoot = vRoot
-                vRoot = tmpNode
-            }
-            synchronized(uRoot) {
-                synchronized(vRoot) {
-                    if (uRoot == root(u) && vRoot == root(v)) {
-                        return action()
-                    }
-                }
-            }
-        }
     }
 }

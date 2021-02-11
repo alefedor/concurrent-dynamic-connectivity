@@ -15,7 +15,7 @@ class FullyRandomScenarioGenerator {
                 var type: QueryType
                 type = randomQueryType(updateWeight, readWeight)
 
-                randomEdge(graph.nodes).edgeToQuery(type)
+                randomEdge(graph).edgeToQuery(type)
             }
         }
 
@@ -34,12 +34,7 @@ class FullyRandomScenarioGenerator {
         }
     }
 
-    private fun randomEdge(nodes: Int): Long {
-        while (true) {
-            val first = rnd.nextInt(nodes)
-            val second = rnd.nextInt(nodes)
-            if (first != second)
-                return bidirectionalEdge(first, second)
-        }
+    private fun randomEdge(graph: Graph): Long {
+        return graph.edges.random(rnd)
     }
 }

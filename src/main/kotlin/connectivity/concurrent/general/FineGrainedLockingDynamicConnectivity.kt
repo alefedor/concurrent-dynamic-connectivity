@@ -149,7 +149,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
                     levels[rank + 1].node(edge.v()).updateNonTreeEdges {
                         nonTreeEdges!!.add(edge)
                     }
-                    ranks.putIfAbsent(edge, rank + 1)
+                    ranks.put(edge, rank + 1)
                 }
             }
         }

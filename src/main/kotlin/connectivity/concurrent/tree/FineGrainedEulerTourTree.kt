@@ -5,16 +5,16 @@ import connectivity.NO_EDGE
 import connectivity.sequential.tree.*
 import java.util.concurrent.*
 
-class FineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
+class FineGrainedETTNode(@JvmField val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
-    var parent: FineGrainedETTNode? = null
-    var left: FineGrainedETTNode? = null
-    var right: FineGrainedETTNode? = null
-    var size: Int = 1
-    val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet() else null // for storing non-tree edges in general case
-    var hasNonTreeEdges: Boolean = false // for traversal
-    var currentLevelTreeEdge: Edge = treeEdge
-    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
+    @JvmField var parent: FineGrainedETTNode? = null
+    @JvmField var left: FineGrainedETTNode? = null
+    @JvmField var right: FineGrainedETTNode? = null
+    @JvmField var size: Int = 1
+    @JvmField val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet(INITIAL_SIZE) else null // for storing non-tree edges in general case
+    @JvmField var hasNonTreeEdges: Boolean = false // for traversal
+    @JvmField var currentLevelTreeEdge: Edge = treeEdge
+    @JvmField var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
 }
 
 class FineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {

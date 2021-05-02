@@ -7,7 +7,7 @@ import connectivity.sequential.tree.*
 import java.util.concurrent.*
 import kotlin.random.Random
 
-class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
+class Node(@JvmField val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile @JvmField
     var parent: Node? = null
     @JvmField
@@ -17,7 +17,7 @@ class Node(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE
     @JvmField
     var size: Int = 1
     @JvmField
-    val nonTreeEdges: ConcurrentHashMultiset<Edge>? = if (isVertex) ConcurrentHashMultiset.create<Edge>() else null // for storing non-tree edges in general case
+    val nonTreeEdges: ConcurrentHashMultiset<Edge>? = if (isVertex) ConcurrentHashMultiset.create(ConcurrentHashMap(INITIAL_SIZE)) else null // for storing non-tree edges in general case
     @Volatile @JvmField
     var hasNonTreeEdges: Boolean = false // for traversal
     @JvmField

@@ -1,9 +1,10 @@
 package connectivity
 
+import benchmarks.util.MAX_BITS_PER_NODE
 import kotlin.math.max
 import kotlin.math.min
 
-const val BITS = 22
+const val BITS = MAX_BITS_PER_NODE
 const val MASK = (1L shl BITS) - 1
 
 // getters for endpoints of an edge

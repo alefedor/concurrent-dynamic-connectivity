@@ -14,15 +14,15 @@ interface TreeDynamicConnectivity {
     fun connected(u: Int, v: Int): Boolean
 }
 
-class SequentialETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
-    var parent: SequentialETTNode? = null
-    var left: SequentialETTNode? = null
-    var right: SequentialETTNode? = null
-    var size: Int = 1
-    val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet() else null // for storing non-tree edges in general case
-    var hasNonTreeEdges: Boolean = false // for traversal
-    var currentLevelTreeEdge: Edge = treeEdge
-    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
+class SequentialETTNode(@JvmField val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
+    @JvmField var parent: SequentialETTNode? = null
+    @JvmField var left: SequentialETTNode? = null
+    @JvmField var right: SequentialETTNode? = null
+    @JvmField var size: Int = 1
+    @JvmField val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet(INITIAL_SIZE) else null // for storing non-tree edges in general case
+    @JvmField var hasNonTreeEdges: Boolean = false // for traversal
+    @JvmField var currentLevelTreeEdge: Edge = treeEdge
+    @JvmField var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
 }
 
 class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {

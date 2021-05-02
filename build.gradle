@@ -72,6 +72,17 @@ task benchmarkJar(type: Jar, dependsOn: jmhJar) {
     }
 }
 
+task largeBenchmarkJar(type: Jar, dependsOn: jmhJar) {
+    manifest {
+        attributes 'Main-Class': 'benchmarks.LargeBenchmarkRunnerKt'
+    }
+    classifier = 'large-benchmark'
+    from {
+        (jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime)
+                .collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 test {
     jvmArgs("--add-opens", "java.base/jdk.internal.misc=ALL-UNNAMED",
             "--add-exports", "java.base/jdk.internal.util=ALL-UNNAMED")

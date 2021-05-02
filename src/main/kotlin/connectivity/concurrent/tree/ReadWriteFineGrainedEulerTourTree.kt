@@ -6,17 +6,17 @@ import connectivity.sequential.tree.*
 import java.util.concurrent.*
 import java.util.concurrent.locks.StampedLock
 
-class ReadWriteFineGrainedETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
+class ReadWriteFineGrainedETTNode(@JvmField val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
-    var parent: ReadWriteFineGrainedETTNode? = null
-    var left: ReadWriteFineGrainedETTNode? = null
-    var right: ReadWriteFineGrainedETTNode? = null
-    var size: Int = 1
-    val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet() else null // for storing non-tree edges in general case
-    var hasNonTreeEdges: Boolean = false // for traversal
-    var currentLevelTreeEdge: Edge = treeEdge
-    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
-    val lock: StampedLock? = if (isVertex) StampedLock() else null
+    @JvmField var parent: ReadWriteFineGrainedETTNode? = null
+    @JvmField var left: ReadWriteFineGrainedETTNode? = null
+    @JvmField var right: ReadWriteFineGrainedETTNode? = null
+    @JvmField var size: Int = 1
+    @JvmField val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet(INITIAL_SIZE) else null // for storing non-tree edges in general case
+    @JvmField var hasNonTreeEdges: Boolean = false // for traversal
+    @JvmField var currentLevelTreeEdge: Edge = treeEdge
+    @JvmField var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
+    @JvmField val lock: StampedLock? = if (isVertex) StampedLock() else null
 }
 
 class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {

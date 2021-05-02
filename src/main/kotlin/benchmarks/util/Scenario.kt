@@ -10,11 +10,11 @@ enum class QueryType(val id: Int) {
     CONNECTED(3)
 }
 
-inline fun Long.type(): QueryType = when (this shr 48) {
+inline fun Long.type(): QueryType = when (this shr (2 * MAX_BITS_PER_NODE)) {
     1L -> QueryType.ADD_EDGE
     2L -> QueryType.REMOVE_EDGE
     3L -> QueryType.CONNECTED
     else -> throw RuntimeException("Unknown query type")
 }
 
-inline fun Long.edgeToQuery(type: QueryType) = this or ((1L shl 48) * type.id)
+inline fun Long.edgeToQuery(type: QueryType) = this or ((1L shl (2 * MAX_BITS_PER_NODE)) * type.id)

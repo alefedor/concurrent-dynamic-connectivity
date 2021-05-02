@@ -8,7 +8,7 @@ import thirdparty.Aksenov239.fc.FCDynamicGraph
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 
-private const val BATCH_SIZE = 10 // increase counter in batches to reduce contention
+private const val BATCH_SIZE = 15 // increase counter in batches to reduce contention
 
 class SuccessiveScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicConnectivity) {
     private val dcp = dcpConstructor(scenario.nodes)

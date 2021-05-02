@@ -1,6 +1,8 @@
 package benchmarks.util
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
+import it.unimi.dsi.fastutil.longs.LongArrayList
+import it.unimi.dsi.fastutil.longs.LongList
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -84,14 +86,16 @@ fun downloadOrCreateAndParseGraph(name: String, type: String, url: String): Grap
     val graph =  when {
         ext.startsWith("rand") || ext == "gr" -> parseGrFile(graphFile, gz)
         ext == "txt" -> parseTxtFile(graphFile, gz)
+        ext == "el" -> parseElFile(graphFile, gz)
         else -> error("Unknown graph type: $ext")
     }
 
     val rnd = Random(454)
-    return Graph(
+    return graph
+    /*return Graph(
         graph.nodes,
         removeSameEdges(graph.edges).toMutableList().shuffled(rnd).toLongArray()
-    )
+    )*/
 }
 
 fun removeSameEdges(edges: LongArray): LongArray {
@@ -156,7 +160,7 @@ fun parseTxtFile(filename: String, gziped: Boolean): Graph {
         when {
             line.startsWith("# ") -> {} // just ignore
             else -> {
-                val parts = line.split(" ", "\t")
+                val parts = line.split(' ', '\t')
                 val from = parts[0].toInt()
                 val to   = parts[1].toInt()
 
@@ -174,4 +178,35 @@ fun parseTxtFile(filename: String, gziped: Boolean): Graph {
     }
     }
     return Graph(idMapper.size, edges.toLongArray())
+}
+
+fun parseElFile(filename: String, gziped: Boolean): Graph {
+    val edges = LongArrayList()
+    val inputStream = if (gziped) GZIPInputStream(FileInputStream(filename)) else FileInputStream(filename)
+    var nodes = 0
+    InputStreamReader(inputStream).buffered().useLines { it.forEach { line ->
+        //val parts = line.split(' ', '\t')
+        var from = 0 //parts[0].toInt()
+        var to   = 0 //parts[1].toInt()
+        var spaces = 0
+        for (c in line) {
+            if (c == ' ' || c == '\t') {
+                spaces++
+                continue
+            }
+            if (spaces == 0) {
+                from = 10 * from + (c - '0')
+            } else if (spaces == 1) {
+                to = 10 * to + (c - '0')
+            }
+        }
+        nodes = max(nodes, from + 1)
+        nodes = max(nodes, to + 1)
+        if (from != to)
+            edges.add(bidirectionalEdge(from, to))
+    }
+    }
+    edges.shuffle()
+    println("Loaded and shuffled")
+    return Graph(nodes, edges.toLongArray())
 }

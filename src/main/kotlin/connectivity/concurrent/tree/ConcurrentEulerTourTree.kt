@@ -10,18 +10,18 @@ import connectivity.sequential.tree.*
 import java.util.concurrent.*
 import kotlin.random.Random
 
-class ConcurrentETTNode(val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
+class ConcurrentETTNode(@JvmField val priority: Int, isVertex: Boolean = true, treeEdge: Edge = NO_EDGE) {
     @Volatile
-    var parent: ConcurrentETTNode? = null
-    var left: ConcurrentETTNode? = null
-    var right: ConcurrentETTNode? = null
-    var size: Int = 1
-    val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet() else null // for storing non-tree edges in general case
-    var hasNonTreeEdges: Boolean = false // for traversal
-    var currentLevelTreeEdge: Edge = treeEdge
-    var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
+    @JvmField var parent: ConcurrentETTNode? = null
+    @JvmField var left: ConcurrentETTNode? = null
+    @JvmField var right: ConcurrentETTNode? = null
+    @JvmField var size: Int = 1
+    @JvmField val nonTreeEdges: SequentialEdgeSet? = if (isVertex) SequentialEdgeSet(INITIAL_SIZE) else null // for storing non-tree edges in general case
+    @JvmField var hasNonTreeEdges: Boolean = false // for traversal
+    @JvmField var currentLevelTreeEdge: Edge = treeEdge
+    @JvmField var hasCurrentLevelTreeEdges: Boolean = currentLevelTreeEdge != NO_EDGE
     @Volatile
-    var version = 0
+    @JvmField var version = 0
 }
 
 class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {

@@ -17,15 +17,14 @@ val RANDOM_DIVIDED_GRAPH_PARAMS = Triple("RANDOM-DIVIDED", "rand_divided", "10 1
 val TWITTER_GRAPH_PARAMS = Triple("TWITTER", "txt gz", "http://snap.stanford.edu/data/twitter_combined.txt.gz")
 val STANFORD_WEB_GRAPH_PARAMS = Triple("STANFORD-WEB", "txt gz", "http://snap.stanford.edu/data/web-Stanford.txt.gz")
 
-lateinit var USA_ROADS_GRAPH: Graph
-lateinit var RANDOM_N_GRAPH: Graph
-lateinit var RANDOM_2N_GRAPH: Graph
-lateinit var RANDOM_NLOG_GRAPH: Graph
-lateinit var RANDOM_NSQRT_GRAPH: Graph
-lateinit var RANDOM_DIVIDED_GRAPH: Graph
-lateinit var TWITTER_GRAPH: Graph
-lateinit var STANFORD_WEB_GRAPH: Graph
-
+private lateinit var USA_ROADS_GRAPH: Graph
+private lateinit var RANDOM_N_GRAPH: Graph
+private lateinit var RANDOM_2N_GRAPH: Graph
+private lateinit var RANDOM_NLOG_GRAPH: Graph
+private lateinit var RANDOM_NSQRT_GRAPH: Graph
+private lateinit var RANDOM_DIVIDED_GRAPH: Graph
+private lateinit var TWITTER_GRAPH: Graph
+private lateinit var STANFORD_WEB_GRAPH: Graph
 
 enum class GraphParams : Serializable {
     USA_ROADS,
@@ -98,15 +97,24 @@ class GraphServer : UnicastRemoteObject(), GraphServerInterface {
     }
 
     companion object {
+        var obj: GraphServer? = null
+        const val NAME = "//localhost/GraphServer"
+
         @JvmStatic
         fun main(args: Array<String>) {
             val registry = LocateRegistry.createRegistry(1099)
-            registry.rebind("//localhost/MyServer", GraphServer())
+            obj = GraphServer()
+            registry.rebind(NAME, obj)
         }
 
         fun getLookup(): GraphServerInterface {
             val registry = LocateRegistry.getRegistry()
-            return (registry.lookup("//localhost/MyServer") as GraphServerInterface)
+            return (registry.lookup(NAME) as GraphServerInterface)
+        }
+
+        fun close() {
+            LocateRegistry.getRegistry().unbind(NAME)
+            UnicastRemoteObject.unexportObject(obj, false)
         }
     }
 }

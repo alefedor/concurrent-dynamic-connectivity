@@ -1,10 +1,7 @@
 package connectivity.concurrent.general
 
-import connectivity.*
 import connectivity.concurrent.GeneralDynamicConnectivityMultipleWriterExecutionGenerator
 import connectivity.concurrent.general.major.*
-import connectivity.concurrent.general.major_coarse_grained.*
-import connectivity.sequential.SlowConnectivity
 import connectivity.sequential.general.*
 import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.*
@@ -13,8 +10,6 @@ import org.jetbrains.kotlinx.lincheck.paramgen.IntGen
 import org.jetbrains.kotlinx.lincheck.strategy.managed.modelchecking.*
 import org.jetbrains.kotlinx.lincheck.strategy.stress.*
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 
 private const val n1 = 5
 private const val n2 = 7
@@ -96,7 +91,7 @@ abstract class LinCheckDynamicConnectivityManyThreadsTest2(
 }
 
 class MajorDCManyThreadsTest1 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, true, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
-class MajorDCManyThreadsTest2 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, false, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
+class MajorDCManyThreadsTest2 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, true, GeneralDynamicConnectivityMultipleWriterExecutionGenerator::class.java)
 class MajorDCManyThreadsTest3 : LinCheckDynamicConnectivityManyThreadsTest1(::MajorDynamicConnectivity, true, null)
 class MajorDCManyThreadsTest4 : LinCheckDynamicConnectivityManyThreadsTest2(::MajorDynamicConnectivity, true, null)
 

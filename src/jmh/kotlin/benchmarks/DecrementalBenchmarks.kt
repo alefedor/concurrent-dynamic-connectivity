@@ -9,9 +9,9 @@ import java.util.concurrent.TimeUnit
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 4, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 @Warmup(iterations = warmupIterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
-open class CommonDynamicConnectivityDecrementalBenchmark {
+open class SmallCommonDynamicConnectivityDecrementalBenchmark {
     @Param
     open var graphParams: GraphParams = GraphParams.values()[0]
 
@@ -21,7 +21,7 @@ open class CommonDynamicConnectivityDecrementalBenchmark {
     @Param
     open var dcpConstructor: DCPForModificationsConstructor = DCPForModificationsConstructor.values()[0]
 
-    @Param("1", "2", "4", "8", "16", "32", "64", "128")
+    @Param("1", "2", "4", "8", "16", "32", "64", "128", "144")
     open var workers: Int = 0
 
     @Benchmark
@@ -53,9 +53,9 @@ open class CommonDynamicConnectivityDecrementalBenchmark {
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 4, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
 @Warmup(iterations = warmupIterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
-open class LockElisionDynamicConnectivityDecrementalBenchmark {
+open class SmallLockElisionDynamicConnectivityDecrementalBenchmark {
     @Param
     open var graphParams: GraphParams = GraphParams.values()[0]
 
@@ -65,7 +65,7 @@ open class LockElisionDynamicConnectivityDecrementalBenchmark {
     @Param
     open var dcpConstructor: LockElisionDCPForModificationsConstructor = LockElisionDCPForModificationsConstructor.values()[0]
 
-    @Param("1", "2", "4", "8", "16", "32", "64", "128")
+    @Param("1", "2", "4", "8", "16", "32", "64", "128", "144")
     open var workers: Int = 0
 
     @Benchmark

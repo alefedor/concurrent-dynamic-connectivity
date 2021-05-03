@@ -15,8 +15,8 @@ private const val n1 = 5
 private const val n2 = 7
 
 private const val actorsPerThread = 3
-private const val stressIterations = 0
-private const val modelCheckingIterations = 200
+private const val stressIterations = 500
+private const val modelCheckingIterations = 50
 private const val invocations = 13000
 private const val threads = 3
 

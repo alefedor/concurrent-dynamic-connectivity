@@ -27,9 +27,7 @@ class ConcurrentFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivit
         // priorities for vertices are numbers in [0, size)
         // priorities for edges are random numbers in [size, 11 * size)
         // priorities for nodes are less so that roots will be always vertices, not edges
-        val priorities = MutableList(size) { it }
-        priorities.shuffle()
-        nodes = Array(size) { ConcurrentFineGrainedETTNode(priorities[it]) }
+        nodes = Array(size) { ConcurrentFineGrainedETTNode(((1_000_000_007L * (it + 10)) % size).toInt()) }
     }
 
     override fun addEdge(u: Int, v: Int) = addEdge(u, v, true, null)

@@ -8,9 +8,9 @@ import thirdparty.Aksenov239.fc.*
 import java.util.concurrent.atomic.*
 
 enum class DCPConstructor {
+    MajorDynamicConnectivity,
     FineGrainedLockingDCP,
     FineGrainedReadWriteLockingDynamicConnectivity,
-    MajorDynamicConnectivity,
     NBFCDynamicConnectivity,
     NBReadsCoarseGrainedLockingDCP,
     NBReadsFineGrainedLockingDynamicConnectivity,

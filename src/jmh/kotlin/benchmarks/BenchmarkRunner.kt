@@ -1,21 +1,15 @@
 package benchmarks
 
 import benchmarks.util.*
-import benchmarks.util.executors.ScenarioExecutor
-import benchmarks.util.executors.SuccessiveScenarioExecutor
-import benchmarks.util.generators.IncrementalScenarioGenerator
-import benchmarks.util.generators.RandomScenarioGenerator
-import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.results.format.ResultFormatType
 import org.openjdk.jmh.runner.Runner
 import org.openjdk.jmh.runner.RunnerException
 import org.openjdk.jmh.runner.options.OptionsBuilder
 import java.util.concurrent.Phaser
-import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 const val iterations = 5
-const val warmupIterations = 2
+const val warmupIterations = 3
 const val TIME_IN_SECONDS = 3
 
 @Throws(RunnerException::class)
@@ -31,8 +25,8 @@ fun main() {
     testGraphs()
 
     val dcpOptions = OptionsBuilder()
-        .include(CommonDynamicConnectivityRandomBenchmark::class.java.simpleName)
-        .jvmArgs("-Xmx50g", "-Xms5g")
+        .include(SmallCommonDynamicConnectivityRandomBenchmark::class.java.simpleName)
+        .jvmArgs("-Xmx50g", "-Xms15g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("random_dcp_results.csv")
@@ -40,8 +34,8 @@ fun main() {
     Runner(dcpOptions).run()
 
     val lockElisionDcpOptions = OptionsBuilder()
-        .include(LockElisionDynamicConnectivityRandomBenchmark::class.java.simpleName)
-        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms5g")
+        .include(SmallLockElisionDynamicConnectivityRandomBenchmark::class.java.simpleName)
+        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms15g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("random_dcp_lock_elision_results.csv")
@@ -49,8 +43,8 @@ fun main() {
     Runner(lockElisionDcpOptions).run()
 
     val incrementalDcpOptions = OptionsBuilder()
-        .include(CommonDynamicConnectivityIncrementalBenchmark::class.java.simpleName)
-        .jvmArgs("-Xmx50g", "-Xms5g")
+        .include(SmallCommonDynamicConnectivityIncrementalBenchmark::class.java.simpleName)
+        .jvmArgs("-Xmx50g", "-Xms15g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("incremental_dcp_results.csv")
@@ -58,8 +52,8 @@ fun main() {
     Runner(incrementalDcpOptions).run()
 
     val incrementalLockElisionDcpOptions = OptionsBuilder()
-        .include(LockElisionDynamicConnectivityIncrementalBenchmark::class.java.simpleName)
-        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms5g")
+        .include(SmallLockElisionDynamicConnectivityIncrementalBenchmark::class.java.simpleName)
+        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms15g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("incremental_dcp_lock_elision_results.csv")
@@ -67,8 +61,8 @@ fun main() {
     Runner(incrementalLockElisionDcpOptions).run()
 
     val decrementalDcpOptions = OptionsBuilder()
-        .include(CommonDynamicConnectivityDecrementalBenchmark::class.java.simpleName)
-        .jvmArgs("-Xmx50g", "-Xms5g")
+        .include(SmallCommonDynamicConnectivityDecrementalBenchmark::class.java.simpleName)
+        .jvmArgs("-Xmx50g", "-Xms15g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("decremental_dcp_results.csv")
@@ -76,8 +70,8 @@ fun main() {
     Runner(decrementalDcpOptions).run()
 
     val decrementalLockElisionDcpOptions = OptionsBuilder()
-        .include(LockElisionDynamicConnectivityDecrementalBenchmark::class.java.simpleName)
-        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms5g")
+        .include(SmallLockElisionDynamicConnectivityDecrementalBenchmark::class.java.simpleName)
+        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms15g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("decremental_dcp_lock_elision_results.csv")
@@ -86,7 +80,7 @@ fun main() {
 
     val twoLevelDcpOptions = OptionsBuilder()
         .include(CommonDynamicConnectivityTwoLevelBenchmark::class.java.simpleName)
-        .jvmArgs("-Xmx50g", "-Xms5g")
+        .jvmArgs("-Xmx50g", "-Xms15g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("two_level_dcp_results.csv")
@@ -95,7 +89,7 @@ fun main() {
 
     val twoLevelLockElisionDcpOptions = OptionsBuilder()
         .include(LockElisionDynamicConnectivityTwoLevelBenchmark::class.java.simpleName)
-        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms5g")
+        .jvmArgs("-XX:+UseRTMLocking", "-XX:RTMRetryCount=5", "-Xmx50g", "-Xms15g")
         .forks(1)
         .resultFormat(ResultFormatType.CSV)
         .result("two_level_dcp_lock_elision_results.csv")

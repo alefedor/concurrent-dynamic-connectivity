@@ -10,13 +10,14 @@ import org.openjdk.jmh.annotations.*
 import java.util.concurrent.TimeUnit
 
 const val MAX_WORKERS = 144
-const val LARGE_SCENARIO_SIZE = 400_000_000
+const val LARGE_SCENARIO_SIZE = 100_000_000
 
 @State(Scope.Thread)
-@BenchmarkMode(Mode.AverageTime)
+@BenchmarkMode(Mode.SingleShotTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 1, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
-@Warmup(iterations = 0, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.DAYS)
+@Timeout(time = 1, timeUnit = TimeUnit.DAYS)
+@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.DAYS)
 open class LargeCommonDynamicConnectivityRandomBenchmark {
     @Param
     open var graph: LargeGraph = LargeGraph.values()[0]
@@ -24,7 +25,7 @@ open class LargeCommonDynamicConnectivityRandomBenchmark {
     lateinit var scenario: Scenario
     lateinit var scenarioExecutor: ScenarioExecutor
 
-    @Param("CoarseGrainedLockingDCP", "FineGrainedLockingDCP", "NBReadsCoarseGrainedLockingDCP", "NBReadsFineGrainedLockingDynamicConnectivity", "NBFCDynamicConnectivity", "MajorDynamicConnectivity", "MajorCoarseGrainedDynamicConnectivity", "FCReadOptimizedDynamicConnectivity")
+    @Param
     open var dcpConstructor: DCPConstructor = DCPConstructor.values()[0]
 
     @Param("4", "99")
@@ -47,9 +48,12 @@ open class LargeCommonDynamicConnectivityRandomBenchmark {
 
     @Setup(Level.Invocation)
     fun initializeInvocation() {
+        println("Invocation")
         scenarioExecutor = ScenarioExecutor(
             scenario,
             { size -> dcpConstructor.constructor()(size, MAX_WORKERS + 1) })
+        println("Prepared")
+        System.gc()
     }
 
     @Setup(Level.Iteration)
@@ -59,10 +63,11 @@ open class LargeCommonDynamicConnectivityRandomBenchmark {
 }
 
 @State(Scope.Thread)
-@BenchmarkMode(Mode.AverageTime)
+@BenchmarkMode(Mode.SingleShotTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = iterations, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
-@Warmup(iterations = 0, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.DAYS)
+@Timeout(time = 1, timeUnit = TimeUnit.DAYS)
+@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.DAYS)
 open class LargeLockElisionDynamicConnectivityRandomBenchmark {
     @Param
     open var graph: LargeGraph = LargeGraph.values()[0]
@@ -93,6 +98,7 @@ open class LargeLockElisionDynamicConnectivityRandomBenchmark {
     @Setup(Level.Invocation)
     fun initializeInvocation() {
         scenarioExecutor = ScenarioExecutor(scenario, dcpConstructor.constructor())
+        System.gc()
     }
 
     @Setup(Level.Iteration)

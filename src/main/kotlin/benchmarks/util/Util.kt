@@ -2,13 +2,10 @@ package benchmarks.util
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
 import it.unimi.dsi.fastutil.longs.LongArrayList
-import it.unimi.dsi.fastutil.longs.LongList
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStreamReader
-import java.io.PrintWriter
-import java.lang.RuntimeException
+import org.apache.commons.compress.compressors.CompressorStreamFactory
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
+import java.io.*
 import java.net.URL
 import java.nio.channels.Channels
 import java.nio.file.Paths
@@ -53,8 +50,13 @@ fun randomDividedGraph(components: Int, nodesEach: Int, edgesEach: Int, rnd: Ran
 
 fun downloadOrCreateAndParseGraph(name: String, type: String, url: String): Graph {
     val gz = type.endsWith("gz")
+    val bz2 = type.endsWith("bz2")
     val ext = type.split(" ")[0]
-    val graphFile = "$name." + (if (ext.startsWith("rand")) "gr" else ext) + (if (gz) ".gz" else "")
+    val graphFile = "$name." + (if (ext.startsWith("rand")) "gr" else ext) + when {
+        gz -> ".gz"
+        bz2 -> ".bz2"
+        else -> ""
+    }
     if (!Paths.get(graphFile).toFile().exists()) {
         if (ext == "rand") {
             val parts = url.split(" ")
@@ -86,16 +88,14 @@ fun downloadOrCreateAndParseGraph(name: String, type: String, url: String): Grap
     val graph =  when {
         ext.startsWith("rand") || ext == "gr" -> parseGrFile(graphFile, gz)
         ext == "txt" -> parseTxtFile(graphFile, gz)
-        ext == "el" -> parseElFile(graphFile, gz)
+        ext == "graph" -> parseGraphFile(graphFile, bz2)
         else -> error("Unknown graph type: $ext")
     }
-
-    val rnd = Random(454)
-    return graph
-    /*return Graph(
+    check(graph.nodes <= (1 shl MAX_BITS_PER_NODE)) { "The maximum number of vertices in a graph should not be greater than 2^${MAX_BITS_PER_NODE}" }
+    return Graph(
         graph.nodes,
-        removeSameEdges(graph.edges).toMutableList().shuffled(rnd).toLongArray()
-    )*/
+        removeSameEdges(graph.edges)
+    )
 }
 
 fun removeSameEdges(edges: LongArray): LongArray {
@@ -129,7 +129,7 @@ fun writeGrFile(filename: String, graph: Graph) {
 }
 
 fun parseGrFile(filename: String, gziped: Boolean): Graph {
-    val edges = mutableListOf<Long>()
+    val edges = LongArrayList()
     val inputStream = if (gziped) GZIPInputStream(FileInputStream(filename)) else FileInputStream(filename)
     var nodes: Int? = null
 
@@ -137,10 +137,10 @@ fun parseGrFile(filename: String, gziped: Boolean): Graph {
         when {
             line.startsWith("c ") -> {} // just ignore
             line.startsWith("p sp ") -> {
-                nodes = line.split(" ")[2].toInt()
+                nodes = line.split(' ')[2].toInt()
             }
             line.startsWith("a ") -> {
-                val parts = line.split(" ")
+                val parts = line.split(' ')
                 val from = parts[1].toInt() - 1
                 val to = parts[2].toInt() - 1
                 edges.add(bidirectionalEdge(from, to))
@@ -148,11 +148,12 @@ fun parseGrFile(filename: String, gziped: Boolean): Graph {
         }
     }
     }
+    edges.shuffle()
     return Graph(nodes!!, edges.toLongArray())
 }
 
 fun parseTxtFile(filename: String, gziped: Boolean): Graph {
-    val edges = mutableListOf<Long>()
+    val edges = LongArrayList()
     val inputStream = if (gziped) GZIPInputStream(FileInputStream(filename)) else FileInputStream(filename)
     val idMapper = Int2IntOpenHashMap()
 
@@ -177,36 +178,44 @@ fun parseTxtFile(filename: String, gziped: Boolean): Graph {
         }
     }
     }
+    edges.shuffle()
     return Graph(idMapper.size, edges.toLongArray())
 }
 
-fun parseElFile(filename: String, gziped: Boolean): Graph {
+fun parseGraphFile(filename: String, bz2: Boolean): Graph {
     val edges = LongArrayList()
-    val inputStream = if (gziped) GZIPInputStream(FileInputStream(filename)) else FileInputStream(filename)
-    var nodes = 0
+    val input = BufferedInputStream(FileInputStream(filename))
+    val inputStream = if (bz2) BZip2CompressorInputStream(input) else input
+    var nodes: Int? = null
+
+    var nodeId = -1
     InputStreamReader(inputStream).buffered().useLines { it.forEach { line ->
-        //val parts = line.split(' ', '\t')
-        var from = 0 //parts[0].toInt()
-        var to   = 0 //parts[1].toInt()
-        var spaces = 0
-        for (c in line) {
-            if (c == ' ' || c == '\t') {
-                spaces++
-                continue
-            }
-            if (spaces == 0) {
-                from = 10 * from + (c - '0')
-            } else if (spaces == 1) {
-                to = 10 * to + (c - '0')
+        nodeId++
+        if (nodeId == 0) {
+            nodes = line.split(' ')[0].toInt()
+        } else {
+            val neighbours = line.split(' ')
+            neighbours.forEach {
+                if (!it.isEmpty()) {
+                    val neighbour = it.toInt()
+                    edges += bidirectionalEdge(nodeId - 1, neighbour - 1)
+                }
             }
         }
-        nodes = max(nodes, from + 1)
-        nodes = max(nodes, to + 1)
-        if (from != to)
-            edges.add(bidirectionalEdge(from, to))
     }
     }
     edges.shuffle()
-    println("Loaded and shuffled")
-    return Graph(nodes, edges.toLongArray())
+    return Graph(nodes!!, edges.toLongArray())
+}
+
+private fun LongArrayList.shuffle() {
+    val rnd = Random(454)
+    for (i in 0 until size) {
+        val r = rnd.nextInt(i + 1)
+        if (r != i) {
+            val tmpr = getLong(i)
+            set(i, getLong(r))
+            set(r, tmpr)
+        }
+    }
 }

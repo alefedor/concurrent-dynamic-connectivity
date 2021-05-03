@@ -3,6 +3,7 @@ package connectivity.sequential.general
 import connectivity.*
 import connectivity.NO_EDGE
 import connectivity.sequential.tree.*
+import kotlin.math.min
 
 interface DynamicConnectivity {
     fun addEdge(u: Int, v: Int)
@@ -21,7 +22,9 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
             levelNumber++
             maxSize *= 2
         }
-        levels = Array(levelNumber) { SequentialEulerTourTree(size) }
+        levels = Array(levelNumber) {
+            SequentialEulerTourTree(size)
+        }
     }
 
     override fun addEdge(u: Int, v: Int) {
@@ -73,9 +76,14 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
                 vRoot = tmp
             }
 
-            // promote tree edges for the lesser component
-            increaseTreeEdgesRank(uRoot, u, v, r)
-            val replacementEdge = findReplacement(uRoot, r)
+            val sample = sample(uRoot, r, SAMPLING_TRIES)
+            val replacementEdge = if (sample > 0) {
+                sample
+            } else {
+                // promote tree edges for the lesser component
+                increaseTreeEdgesRank(uRoot, u, v, r)
+                findReplacement(uRoot, r)
+            }
             if (replacementEdge != NO_EDGE) {
                 // if a replacement is found, then add it to all levels <= r
                 for (i in 0..r)
@@ -87,6 +95,43 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
     }
 
     override fun connected(u: Int, v: Int) = levels[0].connected(u, v)
+
+    private fun sample(node: SequentialETTNode, rank: Int, tries: Long): Long {
+        if (!node.hasNonTreeEdges) return -tries
+        var tries = tries
+        node.nonTreeEdges?.let {
+            val level = levels[rank]
+            if (it.isNotEmpty()) {
+                val iterator = it.iterator()
+                while (tries > 0 && iterator.hasNext()) {
+                    val edge = iterator.next()
+                    if (!level.connected(edge.u(), edge.v())) {
+                        // can be a replacement
+                        level.node(edge.u()).nonTreeEdges!!.remove(edge)
+                        level.node(edge.v()).nonTreeEdges!!.remove(edge)
+                        return edge
+                    }
+                    tries--
+                }
+            }
+        }
+
+        if (tries > 0) {
+            node.left?.let {
+                val samplingResult = sample(it, rank, tries)
+                if (samplingResult > 0) return samplingResult
+                else tries = -samplingResult
+            }
+        }
+        if (tries > 0) {
+            node.right?.let {
+                val samplingResult = sample(it, rank, tries)
+                if (samplingResult > 0) return samplingResult
+                else tries = -samplingResult
+            }
+        }
+        return -tries
+    }
 
     private fun increaseTreeEdgesRank(node: SequentialETTNode, u: Int, v: Int, rank: Int) {
         if (!node.hasCurrentLevelTreeEdges) return
@@ -121,7 +166,6 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
 
             while (iterator.hasNext()) {
                 val edge = iterator.next()
-
                 // remove edge from another node too
                 val firstNode = level.node(edge.u())
                 if (firstNode != node)
@@ -133,6 +177,7 @@ class SequentialDynamicConnectivity (private val size: Int) : DynamicConnectivit
                         nonTreeEdges!!.remove(edge)
                     }
                 iterator.remove()
+
 
                 if (!level.connected(edge.u(), edge.v())) {
                     // is a replacement

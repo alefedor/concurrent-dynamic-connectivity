@@ -10,10 +10,11 @@ import org.openjdk.jmh.annotations.*
 import java.util.concurrent.TimeUnit
 
 @State(Scope.Thread)
-@BenchmarkMode(Mode.AverageTime)
+@BenchmarkMode(Mode.SingleShotTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 1, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
-@Warmup(iterations = 0, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.DAYS)
+@Timeout(time = 1, timeUnit = TimeUnit.DAYS)
+@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.DAYS)
 open class LargeCommonDynamicConnectivityIncrementalBenchmark {
     @Param
     open var graph: LargeGraph = LargeGraph.values()[0]
@@ -41,6 +42,8 @@ open class LargeCommonDynamicConnectivityIncrementalBenchmark {
         scenarioExecutor = SuccessiveScenarioExecutor(
             scenario,
             { size -> dcpConstructor.constructor()(size, MAX_WORKERS + 1) })
+        System.gc()
+
     }
 
     @Setup(Level.Iteration)
@@ -50,10 +53,11 @@ open class LargeCommonDynamicConnectivityIncrementalBenchmark {
 }
 
 @State(Scope.Thread)
-@BenchmarkMode(Mode.AverageTime)
+@BenchmarkMode(Mode.SingleShotTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Measurement(iterations = 1, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
-@Warmup(iterations = 0, time = TIME_IN_SECONDS, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.DAYS)
+@Timeout(time = 1, timeUnit = TimeUnit.DAYS)
+@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.DAYS)
 open class LargeLockElisionDynamicConnectivityIncrementalBenchmark {
     @Param
     open var graph: LargeGraph = LargeGraph.values()[0]
@@ -79,6 +83,7 @@ open class LargeLockElisionDynamicConnectivityIncrementalBenchmark {
     @Setup(Level.Invocation)
     fun initializeInvocation() {
         scenarioExecutor = SuccessiveScenarioExecutor(scenario, dcpConstructor.constructor())
+        System.gc()
     }
 
     @Setup(Level.Iteration)

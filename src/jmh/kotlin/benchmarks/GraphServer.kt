@@ -27,10 +27,10 @@ private lateinit var TWITTER_GRAPH: Graph
 private lateinit var STANFORD_WEB_GRAPH: Graph
 
 enum class GraphParams : Serializable {
+    RANDOM_NLOG,
     USA_ROADS,
     RANDOM_N,
     RANDOM_2N,
-    RANDOM_NLOG,
     RANDOM_NSQRT,
     TWITTER,
     STANFORD_WEB,

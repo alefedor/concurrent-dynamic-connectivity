@@ -4,6 +4,7 @@ import connectivity.*
 import connectivity.NO_EDGE
 import connectivity.concurrent.tree.*
 import connectivity.sequential.general.DynamicConnectivity
+import connectivity.sequential.tree.SequentialETTNode
 
 class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
     private val levels: Array<FineGrainedEulerTourTree>
@@ -65,9 +66,14 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
 
             val lowerRoot = if (uRoot.parent != null) uRoot else vRoot
 
-            // promote tree edges for less component
-            increaseTreeEdgesRank(uRoot, u, v, r)
-            val replacementEdge = findReplacement(uRoot, r, lowerRoot)
+            val sample = sample(uRoot, r, SAMPLING_TRIES, lowerRoot)
+            val replacementEdge = if (sample > 0) {
+                sample
+            } else {
+                // promote tree edges for the lesser component
+                increaseTreeEdgesRank(uRoot, u, v, r)
+                findReplacement(uRoot, r, lowerRoot)
+            }
             if (replacementEdge != NO_EDGE) {
                 for (i in r downTo 0) {
                     val lr = if (i == r) {
@@ -89,6 +95,43 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
 
     override fun connected(u: Int, v: Int): Boolean = withLockedComponents(u, v) {
         levels[0].connected(u, v)
+    }
+
+    private fun sample(node: FineGrainedETTNode, rank: Int, tries: Long, additionalRoot: FineGrainedETTNode): Long {
+        if (!node.hasNonTreeEdges) return -tries
+        var tries = tries
+        node.nonTreeEdges?.let {
+            val level = levels[rank]
+            if (it.isNotEmpty()) {
+                val iterator = it.iterator()
+                while (tries > 0 && iterator.hasNext()) {
+                    val edge = iterator.next()
+                    if (!level.connected(edge.u(), edge.v(), additionalRoot)) {
+                        // can be a replacement
+                        level.node(edge.u()).nonTreeEdges!!.remove(edge)
+                        level.node(edge.v()).nonTreeEdges!!.remove(edge)
+                        return edge
+                    }
+                    tries--
+                }
+            }
+        }
+
+        if (tries > 0) {
+            node.left?.let {
+                val samplingResult = sample(it, rank, tries, additionalRoot)
+                if (samplingResult > 0) return samplingResult
+                else tries = -samplingResult
+            }
+        }
+        if (tries > 0) {
+            node.right?.let {
+                val samplingResult = sample(it, rank, tries, additionalRoot)
+                if (samplingResult > 0) return samplingResult
+                else tries = -samplingResult
+            }
+        }
+        return -tries
     }
 
     private fun increaseTreeEdgesRank(node: FineGrainedETTNode, u: Int, v: Int, rank: Int) {
@@ -136,6 +179,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
                         nonTreeEdges!!.remove(edge)
                     }
                 iterator.remove()
+
 
                 if (!level.connected(edge.u(), edge.v(), additionalRoot)) {
                     // is a replacement
@@ -190,7 +234,7 @@ class FineGrainedLockingDynamicConnectivity(size: Int) : DynamicConnectivity {
             }
             synchronized(uRoot) {
                 synchronized(vRoot) {
-                    if (uRoot == root(u) && vRoot == root(v)) {
+                    if (uRoot.parent == null && vRoot.parent == null && uRoot == root(u) && vRoot == root(v)) {
                         return action()
                     }
                 }

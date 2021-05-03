@@ -7,9 +7,11 @@ import kotlinx.atomicfu.atomic
 import thirdparty.Aksenov239.fc.FCDynamicGraph
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random
 
 const val workAmount = 60 // simulate some other work
 private const val BATCH_SIZE = 15 // increase counter in batches to reduce contention
+private const val DELETE_PERCENTAGE = 0.01
 
 class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicConnectivity) {
     private val dcp = dcpConstructor(scenario.nodes)
@@ -31,6 +33,19 @@ class ScenarioExecutor(val scenario: Scenario, dcpConstructor: (Int) -> DynamicC
         } else {
             for (edge in scenario.initialEdges) {
                 dcp.addEdge(edge.from(), edge.to())
+            }
+        }
+        val rnd = Random(547567)
+        // delete some edges to promote some edges from level 0
+        repeat((scenario.initialEdges.size * DELETE_PERCENTAGE).toInt()) {
+            val edge = scenario.initialEdges.random(rnd)
+            if (dcp is FCDynamicGraph) {
+                val request = FCDynamicGraph.Request()
+                request.set(0, edge.from(), edge.to())
+                dcp.removeEdge(request)
+
+            } else {
+                dcp.removeEdge(edge.from(), edge.to())
             }
         }
 

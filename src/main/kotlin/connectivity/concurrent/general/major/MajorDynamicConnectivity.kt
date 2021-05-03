@@ -1,6 +1,7 @@
 package connectivity.concurrent.general.major
 
 import connectivity.*
+import connectivity.concurrent.tree.ConcurrentETTNode
 import connectivity.sequential.general.DynamicConnectivity
 
 class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
@@ -192,14 +193,18 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 val commonRoot = if (uRoot.parent != null) vRoot else uRoot
                 val currentOperation = RemovalOperationInfo(u, v, lowerRoot)
                 commonRoot.removeEdgeOperation = currentOperation
-
-                // promote tree edges for less component
-                increaseTreeEdgesRank(uRoot, u, v, r)
-                findReplacement0(uRoot, lowerRoot, currentOperation)
-                val replacementEdge: Edge = run {
-                    if (proposeReplacement(currentOperation, CLOSED))
-                        return@run NO_EDGE
+                val sample = sample0(uRoot, SAMPLING_TRIES, lowerRoot, currentOperation)
+                val replacementEdge = if (sample > 0) {
                     currentOperation.replacement.value.edge()
+                } else {
+                    // promote tree edges for less component
+                    increaseTreeEdgesRank(uRoot, u, v, r)
+                    findReplacement0(uRoot, lowerRoot, currentOperation)
+                    run {
+                        if (proposeReplacement(currentOperation, CLOSED))
+                            return@run NO_EDGE
+                        currentOperation.replacement.value.edge()
+                    }
                 }
                 if (replacementEdge != NO_EDGE) {
                     for (i in r downTo 0) {
@@ -221,9 +226,14 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
                 }
                 commonRoot.removeEdgeOperation = null
             } else {
-                // promote tree edges for less component
-                increaseTreeEdgesRank(uRoot, u, v, r)
-                val replacementEdge = findReplacement(uRoot, r, lowerRoot)
+                val sample = sample(uRoot, r, SAMPLING_TRIES, lowerRoot)
+                val replacementEdge = if (sample > 0) {
+                    sample
+                } else {
+                    // promote tree edges for the lesser component
+                    increaseTreeEdgesRank(uRoot, u, v, r)
+                    findReplacement(uRoot, r, lowerRoot)
+                }
                 if (replacementEdge != NO_EDGE) {
                     for (i in r downTo 0) {
                         val lr = if (i == r) {
@@ -425,6 +435,95 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
         return foundReplacement
     }
 
+    private fun sample(node: Node, rank: Int, tries: Long, additionalRoot: Node): Long {
+        if (!node.hasNonTreeEdges) return -tries
+        var tries = tries
+        node.nonTreeEdges?.let {
+            val level = levels[rank]
+            if (it.isNotEmpty()) {
+                val iterator = it.iterator()
+                while (tries > 0 && iterator.hasNext()) {
+                    tries--
+                    val edge = iterator.next()
+                    val edgeState = states[edge] ?: continue // skip already deleted edges
+                    if (edgeState.rank() != rank) continue
+                    if (edgeState.status() != NON_SPANNING) continue
+                    if (!level.connectedSimple(edge.u(), edge.v(), additionalRoot)) {
+                        // can be a replacement
+                        if (states.replace(edge, edgeState, makeState(SPANNING, rank))) {
+                            removeInfo(levels[rank].node(edge.u()), levels[rank].node(edge.v()), edge)
+                            return edge
+                        }
+                    }
+                }
+            }
+        }
+
+        if (tries > 0) {
+            node.left?.let {
+                val samplingResult = sample(it, rank, tries, additionalRoot)
+                if (samplingResult > 0) return samplingResult
+                else tries = -samplingResult
+            }
+        }
+        if (tries > 0) {
+            node.right?.let {
+                val samplingResult = sample(it, rank, tries, additionalRoot)
+                if (samplingResult > 0) return samplingResult
+                else tries = -samplingResult
+            }
+        }
+        return -tries
+    }
+
+    // level 0 is a special case
+    private fun sample0(node: Node, tries: Long, additionalRoot: Node, currentOperationInfo: RemovalOperationInfo): Long {
+        if (!node.hasNonTreeEdges) return -tries
+        var tries = tries
+        node.nonTreeEdges?.let {
+            val level = levels[0]
+            if (it.isNotEmpty()) {
+                val iterator = it.iterator()
+                while (tries > 0 && iterator.hasNext()) {
+                    tries--
+                    val edge = iterator.next()
+                    val edgeState = states[edge] ?: continue // skip already deleted edges
+                    if (edgeState.rank() != 0) continue
+                    if (edgeState.status() != NON_SPANNING) continue
+                    if (!level.connectedSimple(edge.u(), edge.v(), additionalRoot)) {
+                        // can be a replacement
+                        if (states.replace(edge, edgeState, makeState(SPANNING, 0))) {
+                            if (proposeReplacement(currentOperationInfo, pack(0, edge))) {
+                                // success
+                                removeInfo(level.node(edge.u()), level.node(edge.v()), edge)
+                            } else {
+                                // return to the previous state
+                                check(states.replace(edge, makeState(SPANNING, 0), edgeState))
+                            }
+                            return edge // can be not the replacement edge, but there is a replacement edge
+                        }
+                    }
+                }
+            }
+        }
+
+        if (tries > 0) {
+            node.left?.let {
+                val samplingResult = sample0(it, tries, additionalRoot, currentOperationInfo)
+                if (samplingResult > 0) return samplingResult
+                else tries = -samplingResult
+            }
+        }
+        if (tries > 0) {
+            node.right?.let {
+                val samplingResult = sample0(it, tries,additionalRoot, currentOperationInfo)
+                if (samplingResult > 0) return samplingResult
+                else tries = -samplingResult
+            }
+        }
+        return -tries
+    }
+
     private fun root(u: Int): Node = levels[0].root(u)
 
     private inline fun withLockedComponents(a: Int, b: Int, body: () -> Unit) {
@@ -446,7 +545,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             }
             if (uRoot === vRoot) {
                 synchronized(uRoot) {
-                    if (uRoot == root(u) && vRoot == root(v)) {
+                    if (uRoot.parent == null && vRoot.parent == null && uRoot == root(u) && vRoot == root(v)) {
                         body()
                         return
                     }
@@ -454,7 +553,7 @@ class MajorDynamicConnectivity(private val size: Int) : DynamicConnectivity {
             } else {
                 synchronized(uRoot) {
                     synchronized(vRoot) {
-                        if (uRoot == root(u) && vRoot == root(v)) {
+                        if (uRoot.parent == null && vRoot.parent == null && uRoot == root(u) && vRoot == root(v)) {
                             body()
                             return
                         }

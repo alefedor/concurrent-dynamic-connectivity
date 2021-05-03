@@ -11,6 +11,8 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import thirdparty.Aksenov239.fc.FCDynamicGraph
+import thirdparty.Aksenov239.fc.FCNBReadsGraph
 
 enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> DynamicConnectivity) {
     SequentialDynamicConnectivity(::SequentialDynamicConnectivity),
@@ -22,7 +24,8 @@ enum class GeneralDynamicConnectivityConstructor(val construct: (size: Int) -> D
     NBReadsFineGrainedLockingDynamicConnectivity(::NBReadsFineGrainedLockingDynamicConnectivity),
     MajorDynamicConnectivity(::MajorDynamicConnectivity),
     MajorCoarseGrainedDynamicConnectivity(::MajorCoarseGrainedDynamicConnectivity),
-    FCDynamicConnectivity( { size -> thirdparty.Aksenov239.fc.FCDynamicGraph(size, 1) })
+    FCDynamicConnectivity( { size -> FCDynamicGraph(size, 1) }),
+    FCNBReadsGraph({ size -> FCNBReadsGraph(size, 1) }),
 }
 
 @RunWith(Parameterized::class)

@@ -8,7 +8,7 @@ import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 
 private lateinit var ROAD_GRAPH: Graph
-private lateinit var TWITTER_GRAPH: Graph
+private lateinit var LIVE_JOURNAL_GRAPH: Graph
 private lateinit var WEB_GRAPH: Graph
 private lateinit var RANDOM_GRAPH: Graph
 private lateinit var KRON_GRAPH: Graph
@@ -17,17 +17,14 @@ enum class LargeGraph : Serializable {
     KRON,
     RANDOM,
     ROAD,
-    TWITTER,
-    WEB
+    LIVE_JOURNAL,
 }
-
 fun loadGraph(graph: LargeGraph): Graph =
     when (graph) {
-        LargeGraph.KRON -> loadGraph("gapbs/benchmark/graphs/kron", "el", "")
-        LargeGraph.RANDOM -> loadGraph("gapbs/benchmark/graphs/urand", "el", "")
-        LargeGraph.ROAD -> loadGraph("gapbs/benchmark/graphs/road", "el", "")
-        LargeGraph.TWITTER -> loadGraph("gapbs/benchmark/graphs/twitter", "el", "")
-        LargeGraph.WEB -> loadGraph("gapbs/benchmark/graphs/web", "el", "")
+        LargeGraph.KRON -> loadGraph("KRON", "graph bz2", "https://www.cc.gatech.edu/dimacs10/archive/data/kronecker/kron_g500-logn21.graph.bz2")
+        LargeGraph.RANDOM -> loadGraph("RANDOM-LARGE", "graph bz2", "https://www.cc.gatech.edu/dimacs10/archive/data/er/er-fact1.5-scale22.graph.bz2")
+        LargeGraph.ROAD -> loadGraph("USA-ROADS-FULL", "gr gz", "http://www.diag.uniroma1.it/challenge9/data/USA-road-d/USA-road-d.USA.gr.gz")
+        LargeGraph.LIVE_JOURNAL -> loadGraph("LIVE-JOURNAL", "txt gz", "http://snap.stanford.edu/data/soc-LiveJournal1.txt.gz")
     }
 
 interface LargeGraphServerInterface : Remote {
@@ -52,15 +49,10 @@ class LargeGraphServer : UnicastRemoteObject(), LargeGraphServerInterface {
                 ROAD_GRAPH = loadGraph(params)
             ROAD_GRAPH
         }
-        LargeGraph.TWITTER -> {
-            if (!::TWITTER_GRAPH.isInitialized)
-                TWITTER_GRAPH = loadGraph(params)
-            TWITTER_GRAPH
-        }
-        LargeGraph.WEB -> {
-            if (!::WEB_GRAPH.isInitialized)
-                WEB_GRAPH = loadGraph(params)
-            WEB_GRAPH
+        LargeGraph.LIVE_JOURNAL -> {
+            if (!::LIVE_JOURNAL_GRAPH.isInitialized)
+                LIVE_JOURNAL_GRAPH = loadGraph(params)
+            LIVE_JOURNAL_GRAPH
         }
     }
 

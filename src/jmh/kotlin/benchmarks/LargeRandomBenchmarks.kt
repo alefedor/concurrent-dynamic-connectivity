@@ -48,11 +48,9 @@ open class LargeCommonDynamicConnectivityRandomBenchmark {
 
     @Setup(Level.Invocation)
     fun initializeInvocation() {
-        println("Invocation")
         scenarioExecutor = ScenarioExecutor(
             scenario,
             { size -> dcpConstructor.constructor()(size, MAX_WORKERS + 1) })
-        println("Prepared")
         System.gc()
     }
 

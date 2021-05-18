@@ -21,7 +21,7 @@ class ReadWriteFineGrainedETTNode(@JvmField val priority: Int, isVertex: Boolean
 
 class ReadWriteFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<ReadWriteFineGrainedETTNode>
-    private val edgeToNode = ConcurrentEdgeMap<ReadWriteFineGrainedETTNode>()
+    private val edgeToNode = ConcurrentEdgeMap<ReadWriteFineGrainedETTNode>(size, false)
 
     init {
         // priorities for vertices are numbers in [0, size)

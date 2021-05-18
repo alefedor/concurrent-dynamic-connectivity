@@ -27,7 +27,7 @@ class SequentialETTNode(@JvmField val priority: Int, isVertex: Boolean = true, t
 
 class SequentialEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<SequentialETTNode>
-    private val edgeToNode = SequentialEdgeMap<SequentialETTNode>()
+    private val edgeToNode = SequentialEdgeMap<SequentialETTNode>(size)
 
     init {
         // priorities for vertices are numbers in [0, size)

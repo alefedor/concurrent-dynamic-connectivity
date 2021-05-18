@@ -26,7 +26,7 @@ class ConcurrentETTNode(@JvmField val priority: Int, isVertex: Boolean = true, t
 
 class ConcurrentEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<ConcurrentETTNode>
-    private val edgeToNode = SequentialEdgeMap<ConcurrentETTNode>()
+    private val edgeToNode = SequentialEdgeMap<ConcurrentETTNode>(size)
 
     init {
         // priorities for vertices are numbers in [0, size)

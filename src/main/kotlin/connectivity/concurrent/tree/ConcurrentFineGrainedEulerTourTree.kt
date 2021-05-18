@@ -21,7 +21,7 @@ class ConcurrentFineGrainedETTNode(@JvmField val priority: Int, isVertex: Boolea
 
 class ConcurrentFineGrainedEulerTourTree(val size: Int) : TreeDynamicConnectivity {
     private val nodes: Array<ConcurrentFineGrainedETTNode>
-    private val edgeToNode = ConcurrentEdgeMap<ConcurrentFineGrainedETTNode>()
+    private val edgeToNode = ConcurrentEdgeMap<ConcurrentFineGrainedETTNode>(size, false)
 
     init {
         // priorities for vertices are numbers in [0, size)
